@@ -79,7 +79,7 @@ export class Electron {
     });
   }
 
-  public async ensureDownloaded(version: string): Promise<string> {
+  public async ensureDownloadedImpl(version: string): Promise<string> {
     const d = debug(`fiddle-runner:Electron:${version}:ensureDownloaded`);
 
     const zipFile = path.join(
@@ -99,7 +99,23 @@ export class Electron {
     return zipFile;
   }
 
-  public async prepare(version: string): Promise<string> {
+  private downloading = new Map<string, Promise<string>>();
+
+  public async ensureDownloaded(version: string): Promise<string> {
+    const { downloading: promises } = this;
+    let promise = promises.get(version);
+    if (promise) return promise;
+
+    promise = this.ensureDownloadedImpl(version).finally(() =>
+      promises.delete(version),
+    );
+    promises.set(version, promise);
+    return promise;
+  }
+
+  private preparing: Promise<string> | undefined;
+
+  private async prepareImpl(version: string): Promise<string> {
     const d = debug(`fiddle-runner:Electron:${version}:prepare`);
     const { electronInstall } = this.paths;
 
@@ -118,5 +134,14 @@ export class Electron {
     const electronExec = path.join(electronInstall, execSubpath());
     d(inspect({ electronExec, version }));
     return electronExec;
+  }
+
+  public async prepare(version: string): Promise<string> {
+    if (!this.preparing) {
+      this.preparing = this.prepareImpl(version);
+    } else {
+      this.preparing = this.preparing.then(() => this.prepareImpl(version));
+    }
+    return this.preparing;
   }
 }
