@@ -6,7 +6,8 @@
   "license": "MIT",
   "name": "electron-fiddle-runner",
   "version": "0.0.1",
-  "main": "dist/main.js",
+  "main": "lib/cli.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc -b",
     "lint": "run-p lint:eslint lint:prettier",

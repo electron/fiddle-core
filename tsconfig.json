@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "declaration": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
     "lib": ["es2019"],
