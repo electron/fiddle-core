@@ -14,6 +14,27 @@ Run fiddles from anywhere, on any Electron release
 $ electron-fiddle-runner run 12.0.0 /path/to/fiddle
 $ electron-fiddle-runner test 12.0.0 642fa8daaebea6044c9079e3f8a46390
 $ electron-fiddle-runner bisect 8.0.0 13.0.0 https://github.com/my/testcase.git
+
+
+$ electron-fiddle-runner bisect 642fa8daaebea6044c9079e3f8a46390 8.0.0 13.0.0
+...
+🏁 finished bisecting across 438 versions...
+# 219 🟢 passed 11.0.0-nightly.20200611 (test #1)
+# 328 🟢 passed 12.0.0-beta.12 (test #2)
+# 342 🟢 passed 12.0.0-beta.29 (test #5)
+# 346 🟢 passed 12.0.1 (test #7)
+# 347 🔴 failed 12.0.2 (test #9)
+# 348 🔴 failed 12.0.3 (test #8)
+# 349 🔴 failed 12.0.4 (test #6)
+# 356 🔴 failed 12.0.11 (test #4)
+# 383 🔴 failed 13.0.0-nightly.20210108 (test #3)
+
+🏁 Done bisecting
+🟢 passed 12.0.1
+🔴 failed 12.0.2
+Commits between versions:
+↔ https://github.com/electron/electron/compare/v12.0.1...v12.0.2
+Done in 28.19s.
 ```
 
 ## API
