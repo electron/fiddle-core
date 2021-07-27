@@ -20,6 +20,6 @@ const paths = envPaths('electron-fiddle-runner', { suffix: '' });
 export const DefaultPaths: Paths = {
   electronDownloads: path.join(paths.data, 'electron', 'zips'),
   electronInstall: path.join(paths.data, 'electron', 'current'),
-  fiddles: path.join(paths.temp, 'fiddles'),
+  fiddles: path.join(paths.cache, 'fiddles'),
   versionsCache: path.join(paths.cache, 'releases.json'),
 };

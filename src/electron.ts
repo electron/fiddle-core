@@ -7,7 +7,7 @@ import { inspect } from 'util';
 
 import { DefaultPaths, Paths } from './paths';
 
-function execSubpath(): string {
+export function execSubpath(): string {
   switch (process.platform) {
     case 'darwin':
       return 'Electron.app/Contents/MacOS/Electron';
@@ -113,10 +113,10 @@ export class Electron {
     return promise;
   }
 
-  private preparing: Promise<string> | undefined;
+  private installing: Promise<string> | undefined;
 
-  private async prepareImpl(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Electron:${version}:prepare`);
+  private async installImpl(version: string): Promise<string> {
+    const d = debug(`fiddle-runner:Electron:${version}:installImpl`);
     const { electronInstall } = this.paths;
 
     // see if the current version (if any) is already `version`
@@ -136,12 +136,12 @@ export class Electron {
     return electronExec;
   }
 
-  public async prepare(version: string): Promise<string> {
-    if (!this.preparing) {
-      this.preparing = this.prepareImpl(version);
+  public async install(version: string): Promise<string> {
+    if (!this.installing) {
+      this.installing = this.installImpl(version);
     } else {
-      this.preparing = this.preparing.then(() => this.prepareImpl(version));
+      this.installing = this.installing.then(() => this.installImpl(version));
     }
-    return this.preparing;
+    return this.installing;
   }
 }

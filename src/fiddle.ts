@@ -3,7 +3,6 @@ import * as path from 'path';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
-import { URL } from 'url';
 
 import { DefaultPaths } from './paths';
 
@@ -61,4 +60,38 @@ export class FiddleFactory {
       source: url,
     };
   }
+
+  public async from(source: string): Promise<Fiddle | undefined> {
+    if (fs.existsSync(source)) {
+      return this.fromFolder(source);
+    }
+    if (source.startsWith('https://') || source.endsWith('.git')) {
+      return this.fromRepo(source);
+    }
+    if (/^[0-9A-Fa-f]{32}$/.test(source)) {
+      return this.fromGist(source);
+    }
+  }
+
+  public async fromMem(source: Map<string, string>): Promise<Fiddle> {
+    const d = debug('fiddle-runner:FiddleFactory:fromMem');
+
+    // make a tmp copy of this fiddle
+    const hash = hashString([...source.keys()].join(','));
+    const folder = path.join(this.fiddles, hash);
+    d({ folder });
+
+    const promises: Promise<void>[] = [];
+    for (const [filename, content] of source.entries()) {
+      promises.push(fs.outputFile(filename, content, 'utf8'));
+    }
+    await Promise.all(promises);
+
+    return {
+      mainPath: path.join(folder, 'main.js'),
+      source: 'memory',
+    };
+  }
 }
+
+export const Fiddles = new FiddleFactory();

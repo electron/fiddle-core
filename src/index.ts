@@ -1,6 +1,6 @@
 import { DefaultPaths, Paths } from './paths';
 import { Electron } from './electron';
-import { Fiddle, FiddleFactory } from './fiddle';
+import { Fiddle, Fiddles, FiddleFactory } from './fiddle';
 import {
   BisectResult,
   Runner,
@@ -16,6 +16,7 @@ export {
   Electron,
   ElectronVersions,
   Fiddle,
+  Fiddles,
   FiddleFactory,
   Paths,
   Runner,

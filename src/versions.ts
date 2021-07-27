@@ -1,23 +1,28 @@
 import * as fs from 'fs-extra';
 import * as semver from 'semver';
-import fetch from 'node-fetch';
 import debug from 'debug';
+import fetch from 'node-fetch';
 
-import { DefaultPaths } from './paths';
+type SemVer = semver.SemVer;
+
+import { DefaultPaths, Paths } from './paths';
+
+type SemOrStr = SemVer | string;
 
 export interface Versions {
-  getDefaultBisectStart(): Promise<string>;
-  getLatestVersion(): Promise<string>;
-  getVersions(): Promise<string[]>;
-  getVersionsInRange(range: [string, string]): Promise<string[]>;
-  getVersionsToTest(): Promise<string[]>;
-  isVersion(version: string): Promise<boolean>;
+  readonly obsoleteMajors: number[];
+  readonly prereleaseMajors: number[];
+  readonly supportedMajors: number[];
+  readonly versions: SemVer[];
+  readonly latest: SemVer | undefined;
+  readonly latestStable: SemVer | undefined;
+
+  inBranch(major: number): SemVer[];
+  inRange(a: SemOrStr, b: SemOrStr): SemVer[];
+  isVersion(version: SemOrStr): boolean;
 }
 
-type Release = semver.SemVer;
-
-// from https://github.com/electron/fiddle/blob/master/src/utils/sort-versions.ts
-function releaseCompare(a: Release, b: Release) {
+function releaseCompare(a: SemVer, b: SemVer) {
   const l = a.compareMain(b);
   if (l) return l;
   // Electron's approach is nightly -> other prerelease tags -> stable,
@@ -29,142 +34,148 @@ function releaseCompare(a: Release, b: Release) {
   return a.comparePre(b);
 }
 
-function hasVersion(value: unknown): value is { version: unknown } {
-  return typeof value === 'object' && value !== null && 'version' in value;
+// ts type guards
+
+function hasVersion(val: unknown): val is { version: unknown } {
+  return typeof val === 'object' && val !== null && 'version' in val;
 }
 
-function isVersionArray(value: unknown): value is Array<{ version: string }> {
+function isArrayOfVersionObjects(
+  val: unknown,
+): val is Array<{ version: string }> {
   return (
-    Array.isArray(value) &&
-    value.every((item) => hasVersion(item) && typeof item.version === 'string')
+    Array.isArray(val) &&
+    val.every((item) => hasVersion(item) && typeof item.version === 'string')
   );
 }
 
-export abstract class BaseVersionsImpl implements Versions {
-  private readonly releases = new Map<string, Release>();
-  private releasesTime = 0; // epoch
+function isArrayOfStrings(val: unknown): val is Array<string> {
+  return Array.isArray(val) && val.every((item) => typeof item === 'string');
+}
 
-  protected abstract fetchReleases(): Promise<unknown>;
+const NUM_SUPPORTED_MAJORS = 4;
 
-  private async updateReleases() {
-    const versions = await this.fetchReleases();
-    this.releasesTime = Date.now();
-    this.releases.clear();
-    if (isVersionArray(versions)) {
-      for (const { version } of versions) {
-        this.releases.set(version, semver.parse(version)!);
-      }
-    }
-  }
+export class BaseVersions implements Versions {
+  private readonly map = new Map<string, SemVer>();
 
-  private isCacheTooOld(): boolean {
-    // if it's been >12 hours, refresh the cache
-    const CACHE_PERIOD_MSEC = 12 * 60 * 60 * 1000;
-    return this.releasesTime + CACHE_PERIOD_MSEC < Date.now();
-  }
+  public constructor(val: unknown) {
+    // build the array
+    let parsed: Array<SemVer | null> = [];
 
-  private async ensureReleases() {
-    if (!this.releases.size || this.isCacheTooOld())
-      await this.updateReleases();
-  }
-
-  private groupReleasesByMajor(releases: Release[]): Map<number, Release[]> {
-    const majors = [...new Set<number>(releases.map((rel) => rel.major))];
-    const byMajor = new Map<number, Release[]>(majors.map((maj) => [maj, []]));
-    for (const rel of releases) byMajor.get(rel.major)!.push(rel);
-    for (const range of byMajor.values()) range.sort(releaseCompare);
-    return byMajor;
-  }
-
-  public async getVersionsToTest(): Promise<string[]> {
-    await this.ensureReleases();
-
-    const byMajor = this.groupReleasesByMajor([...this.releases.values()]);
-    const majors = [...byMajor.keys()].sort((a, b) => a - b);
-
-    const versions: Release[] = [];
-
-    // Get the oldest and newest version of each branch we're testing.
-    // If a branch has gone stable, skip its prereleases.
-
-    const isStable = (rel: Release) => rel.prerelease.length === 0;
-    const hasStable = (releases: Release[]) => releases.some(isStable);
-
-    // const SUPPORTED_MAJORS = 3; // https://www.electronjs.org/docs/tutorial/support
-    const SUPPORTED_MAJORS = 4; // for rest of 2021. https://github.com/electron/electronjs.org/pull/5463
-    const UNSUPPORTED_MAJORS_TO_TEST = 2;
-    const NUM_STABLE_TO_TEST = SUPPORTED_MAJORS + UNSUPPORTED_MAJORS_TO_TEST;
-    let stableLeft = NUM_STABLE_TO_TEST;
-    while (majors.length > 0 && stableLeft > 0) {
-      const major = majors.pop()!;
-      let range = byMajor.get(major)!;
-      if (hasStable(range)) {
-        range = range.filter(isStable); // skip its prereleases
-        --stableLeft;
-      }
-      versions.push(range.shift()!); // oldest version
-      if (range.length >= 1) versions.push(range.pop()!); // newest version
+    if (isArrayOfVersionObjects(val)) {
+      parsed = val.map(({ version }) => semver.parse(version));
+    } else if (isArrayOfStrings(val)) {
+      parsed = val.map((version) => semver.parse(version));
     }
 
-    return versions.sort(releaseCompare).map((ret) => ret.version);
+    // insert them in sorted order
+    const semvers = parsed.filter((sem) => Boolean(sem)) as SemVer[];
+    semvers.sort((a, b) => releaseCompare(a, b));
+    this.map = new Map(semvers.map((sem) => [sem.version, sem]));
   }
 
-  public async getDefaultBisectStart(): Promise<string> {
-    return (await this.getVersionsToTest()).shift()!;
+  public get prereleaseMajors(): number[] {
+    const majors = new Set<number>();
+    for (const ver of this.map.values()) {
+      majors.add(ver.major);
+    }
+    for (const ver of this.map.values()) {
+      if (ver.prerelease.length === 0) {
+        majors.delete(ver.major);
+      }
+    }
+    return [...majors];
   }
 
-  public async isVersion(version: string): Promise<boolean> {
-    await this.ensureReleases();
-    return this.releases.has(version);
+  public get stableMajors(): number[] {
+    const majors = new Set<number>();
+    for (const ver of this.map.values()) {
+      if (ver.prerelease.length === 0) {
+        majors.add(ver.major);
+      }
+    }
+    return [...majors];
   }
 
-  public async getVersions(): Promise<string[]> {
-    await this.ensureReleases();
-    return [...this.releases.keys()];
+  public get supportedMajors(): number[] {
+    return this.stableMajors.slice(-NUM_SUPPORTED_MAJORS);
   }
 
-  public async getLatestVersion(): Promise<string> {
-    await this.ensureReleases();
-    return [...this.releases.values()].sort(releaseCompare).pop()!.version;
+  public get obsoleteMajors(): number[] {
+    return this.stableMajors.slice(0, -NUM_SUPPORTED_MAJORS);
   }
 
-  public async getVersionsInRange(range: [string, string]): Promise<string[]> {
-    let [sema, semb] = range.map((version) => semver.parse(version));
-    if (releaseCompare(sema!, semb!) > 0) [sema, semb] = [semb, sema];
+  public get versions(): SemVer[] {
+    return [...this.map.values()];
+  }
 
-    await this.ensureReleases();
-    return [...this.releases.values()]
-      .filter((ver) => releaseCompare(ver, sema!) >= 0)
-      .filter((ver) => releaseCompare(ver, semb!) <= 0)
-      .sort((a, b) => releaseCompare(a, b))
-      .map((ver) => ver.version);
+  public get latest(): SemVer | undefined {
+    return this.versions.pop();
+  }
+
+  public get latestStable(): SemVer | undefined {
+    let stable: SemVer | undefined = undefined;
+    for (const ver of this.map.values()) {
+      if (ver.prerelease.length === 0) {
+        stable = ver;
+      }
+    }
+    return stable;
+  }
+
+  public isVersion(ver: SemOrStr): boolean {
+    return this.map.has(typeof ver === 'string' ? ver : ver.version);
+  }
+
+  public inBranch(major: number): SemVer[] {
+    const versions: SemVer[] = [];
+    for (const ver of this.map.values()) {
+      if (ver.major === major) {
+        versions.push(ver);
+      }
+    }
+    return versions;
+  }
+
+  public inRange(a: SemOrStr, b: SemOrStr): SemVer[] {
+    if (typeof a !== 'string') a = a.version;
+    if (typeof b !== 'string') b = b.version;
+
+    const versions = [...this.map.values()];
+    let first = versions.findIndex((ver) => ver.version === a);
+    let last = versions.findIndex((ver) => ver.version === b);
+    if (first > last) [first, last] = [last, first];
+    return versions.slice(first, last + 1);
   }
 }
 
-export class ElectronVersions extends BaseVersionsImpl {
-  constructor(private readonly cacheFile = DefaultPaths.versionsCache) {
-    super();
+export class ElectronVersions extends BaseVersions {
+  private constructor(values: unknown) {
+    super(values);
   }
 
-  protected async fetchReleases(): Promise<unknown> {
-    const d = debug('fiddle-runner:ElectronVersions:fetchReleases');
+  public static async create(
+    paths: Partial<Paths> = {},
+  ): Promise<ElectronVersions> {
+    const d = debug('fiddle-runner:ElectronVersions:create');
+    const { versionsCache } = { ...DefaultPaths, ...paths };
     try {
-      const st = await fs.stat(this.cacheFile);
+      const st = await fs.stat(versionsCache);
       const cacheIntervalMs = 4 * 60 * 60 * 1000; // re-fetch after 4 hours
       if (st.mtime.getTime() + cacheIntervalMs > Date.now()) {
-        return (await fs.readJson(this.cacheFile)) as unknown;
+        return new ElectronVersions(await fs.readJson(versionsCache));
       }
     } catch (err) {
       // if no cache, fetch from electronjs.org
-      d(`unable to stat cache file "${this.cacheFile}"`, err);
+      d(`unable to stat cache file "${versionsCache}"`, err);
     }
 
     const url = 'https://releases.electronjs.org/releases.json';
     d('fetching releases list from', url);
     const response = await fetch(url);
     const json = (await response.json()) as unknown;
-    await fs.outputJson(this.cacheFile, json);
-    d(`saved "${this.cacheFile}"`);
-    return json;
+    await fs.outputJson(versionsCache, json);
+    d(`saved "${versionsCache}"`);
+    return new ElectronVersions(json);
   }
 }

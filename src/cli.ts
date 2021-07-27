@@ -1,18 +1,16 @@
 import { inspect } from 'util';
-import * as fs from 'fs';
 import debug from 'debug';
 
 import { Electron } from './electron';
 import { ElectronVersions } from './versions';
-import { Fiddle, FiddleFactory } from './fiddle';
+import { Fiddle, Fiddles } from './fiddle';
 import { Runner } from './runner';
 
 async function main() {
   const d = debug('fiddle-runner:main');
 
-  const electronVersions = new ElectronVersions();
-  const fiddleFactory = new FiddleFactory();
-  const runner = new Runner(new Electron(), electronVersions);
+  const elvers = await ElectronVersions.create();
+  const runner = new Runner(new Electron(), elvers);
   const versions: string[] = [];
 
   // skip past 'node' and 'cli.js'
@@ -22,22 +20,21 @@ async function main() {
   let cmd: Cmd = undefined;
   let fiddle: Fiddle | undefined = undefined;
 
+  d('params', inspect(params));
   for (const param of params) {
+    d('param', param);
     if (param === 'bisect') {
       cmd = 'bisect';
-    } else if (param === 'test') {
+    } else if (param === 'test' || param === 'start' || param === 'run') {
+      d('it is test');
       cmd = 'test';
-    } else if (await electronVersions.isVersion(param)) {
+    } else if (elvers.isVersion(param)) {
       versions.push(param);
-    } else if (fs.existsSync(param)) {
-      fiddle = await fiddleFactory.fromFolder(param);
-    } else if (param.startsWith('https://') || param.endsWith('.git')) {
-      fiddle = await fiddleFactory.fromRepo(param);
-    } else if (/^[0-9A-Fa-f]{32}$/.test(param)) {
-      fiddle = await fiddleFactory.fromGist(param);
     } else {
+      fiddle = await Fiddles.from(param);
+      if (fiddle) continue;
       console.error(
-        `Unrecognized parameter "${param}". Must be 'test', 'bisect', a version, a gist, a folder, or a repo URL.`,
+        `Unrecognized parameter "${param}". Must be 'test', 'start', 'bisect', a version, a gist, a folder, or a repo URL.`,
       );
       process.exit(1);
     }
@@ -47,7 +44,7 @@ async function main() {
 
   if (!cmd) {
     console.error(
-      "Command-line parameters must include one of ['bisect', 'test']",
+      "Command-line parameters must include one of ['bisect', 'test', 'start']",
     );
     process.exit(1);
   }

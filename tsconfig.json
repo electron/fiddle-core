@@ -2,12 +2,13 @@
   "compilerOptions": {
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "lib": ["es2020"],
+    "lib": ["es2019"],
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "lib",
     "resolveJsonModule": true,
     "strict": true,
+    "target": "es6",
     "types": [ "jest", "node" ]
   },
   "exclude": [
@@ -15,5 +16,5 @@
     "lib",
     "jest.config.js"
   ],
-  "include": ["src/**/*ts", "tests/**/*ts"],
+  "include": ["src/**/*ts"],
 }

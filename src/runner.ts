@@ -1,14 +1,16 @@
 import * as child_process from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { Writable } from 'stream';
 import debug from 'debug';
 import getos from 'getos';
+import { Writable } from 'stream';
 import { inspect } from 'util';
 
-import { Electron } from './electron';
-import { Fiddle } from './fiddle';
+import { Electron, execSubpath } from './electron';
 import { ElectronVersions, Versions } from './versions';
+import { Fiddle } from './fiddle';
+import { DefaultPaths, Paths } from './paths';
 
 export interface SpawnOptions extends child_process.SpawnOptions {
   headless?: boolean;
@@ -32,11 +34,28 @@ export interface BisectResult {
 export class Runner {
   private osInfo = '';
 
-  constructor(
-    private readonly electron: Electron = new Electron(),
-    private readonly versions: Versions = new ElectronVersions(),
+  public constructor(
+    private readonly electron: Electron,
+    private readonly versions: Versions,
   ) {
     getos((err, result) => (this.osInfo = inspect(result || err)));
+  }
+
+  public static async create(opts: {
+    paths: Partial<Paths>;
+    versions?: Versions;
+  }): Promise<Runner> {
+    const paths = { ...DefaultPaths, ...opts.paths };
+    const versions = opts.versions || (await ElectronVersions.create(paths));
+    return new Runner(new Electron(paths), versions);
+  }
+
+  private async getExec(val: string): Promise<string> {
+    if (fs.existsSync(val)) return val;
+    if (this.versions.isVersion(val)) return await this.electron.install(val);
+    const name = path.join(val, execSubpath());
+    if (fs.existsSync(name)) return name;
+    throw new Error(`Unrecognized electron name: "${val}"`);
   }
 
   private spawnInfo = (version: string, exec: string, fiddle: Fiddle) =>
@@ -84,8 +103,8 @@ export class Runner {
     opts = { out: process.stdout, headless: false, ...opts };
 
     // set up the electron binary and the fiddle
-    const electron = await this.electron.prepare(version);
-    let exec = electron;
+    const electronExec = await this.getExec(version);
+    let exec = electronExec;
     let args = [fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
@@ -94,7 +113,7 @@ export class Runner {
     const child = child_process.spawn(exec, args, opts);
 
     if (child.stdout)
-      child.stdout.push(this.spawnInfo(version, electron, fiddle));
+      child.stdout.push(this.spawnInfo(version, electronExec, fiddle));
 
     return child;
   }
@@ -109,8 +128,8 @@ export class Runner {
     opts = { headless: false, out: process.stdout, ...opts };
 
     // set up the electron binary and the fiddle
-    const electron = await this.electron.prepare(version);
-    let exec = electron;
+    const electronExec = await this.getExec(version);
+    let exec = electronExec;
     let args = [fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
@@ -122,7 +141,9 @@ export class Runner {
 
     if (opts.out) {
       opts.out.write(
-        [this.spawnInfo(version, electron, fiddle), result.stdout].join('\n'),
+        [this.spawnInfo(version, electronExec, fiddle), result.stdout].join(
+          '\n',
+        ),
       );
     }
 
@@ -182,7 +203,7 @@ export class Runner {
       }
     };
 
-    const versions = await this.versions.getVersionsInRange(version_range);
+    const versions = this.versions.inRange(...version_range);
 
     const displayIndex = (i: number) => '#' + i.toString().padStart(4, ' ');
 
@@ -194,7 +215,7 @@ export class Runner {
         ` - the version range is [${version_range.join('..')}]`,
         ` - there are ${versions.length} versions in this range:`,
         '',
-        ...versions.map((ver, i) => `${displayIndex(i)} - ${ver}`),
+        ...versions.map((ver, i) => `${displayIndex(i)} - ${ver.version}`),
       ].join('\n'),
     );
 
@@ -206,13 +227,13 @@ export class Runner {
     const results = new Array<TestResult>(versions.length);
     while (left + 1 < right) {
       const mid = Math.round(left + (right - left) / 2);
-      const version = versions[mid];
+      const ver = versions[mid];
       testOrder.push(mid);
-      log(`bisecting, range [${left}..${right}], mid ${mid} (${version})`);
+      log(`bisecting, range [${left}..${right}], mid ${mid} (${ver.version})`);
 
-      result = await this.test(version, fiddle, out);
+      result = await this.test(ver.version, fiddle, out);
       results[mid] = result;
-      log(`${Runner.displayResult(result)} ${versions[mid]}\n`);
+      log(`${Runner.displayResult(result)} ${versions[mid].version}\n`);
 
       if (result.status === 'test_passed') {
         left = mid;
@@ -242,8 +263,8 @@ export class Runner {
       results[left].status === 'test_passed' &&
       results[right].status === 'test_failed';
     if (success) {
-      const good = versions[left];
-      const bad = versions[right];
+      const good = versions[left].version;
+      const bad = versions[right].version;
       log(
         [
           `${Runner.displayResult(results[left])} ${good}`,
@@ -258,7 +279,7 @@ export class Runner {
 
     if (success) {
       return {
-        range: [versions[left], versions[right]],
+        range: [versions[left].version, versions[right].version],
         status: 'bisect_succeeded',
       };
     } else if (
