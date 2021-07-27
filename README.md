@@ -1,6 +1,6 @@
 # Electron-Fiddle-Runner
 
-Run Fiddles from anywhere on any Electron release
+Run fiddles from anywhere, on any Electron release
 
 ## CLI
 
@@ -54,7 +54,7 @@ fiddle = await Fiddles.fromMem(new Map<string, string>([
 ```
 import { Fiddles, Runner } from 'electron-fiddle-runner';
 
-const runner = new Runner();
+const runner = await Runner.create();
 
 // lower-level utils to spawn a fiddle
 const result = await runner.spawnSync(versionString, fiddle, nodeSpawnSyncOpts);
