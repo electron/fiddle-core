@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@electron/get": "^1.12.4",
-    "@types/getos": "^3.0.1",
     "debug": "^4.3.1",
     "env-paths": "^2.2.1",
     "extract-zip": "^2.0.1",
@@ -36,6 +35,7 @@
   "devDependencies": {
     "@types/debug": "^4.1.5",
     "@types/fs-extra": "^9.0.12",
+    "@types/getos": "^3.0.1",
     "@types/jest": "^26.0.24",
     "@types/node-fetch": "^2.5.11",
     "@types/semver": "^7.3.8",
