@@ -2,6 +2,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import debug from 'debug';
 import extract from 'extract-zip';
+import { EventEmitter } from 'events';
 import { download as electronDownload } from '@electron/get';
 import { inspect } from 'util';
 
@@ -24,11 +25,18 @@ function getZipName(version: string): string {
 
 type ProgressObject = { percent: number };
 
-export class Electron {
+export class Electron extends EventEmitter {
   private readonly paths: Paths;
 
   constructor(pathsIn: Partial<Paths> = {}) {
+    super();
     this.paths = { ...DefaultPaths, ...pathsIn };
+  }
+
+  public async remove(version: string): Promise<void> {
+    const zip = path.join(this.paths.electronDownloads, getZipName(version));
+    await fs.remove(zip);
+    this.emit('removed', version);
   }
 
   public async installed(): Promise<string | undefined> {
@@ -70,12 +78,14 @@ export class Electron {
         pctDone = pct;
       }
     };
-    return await electronDownload(version, {
+    const zipFile = await electronDownload(version, {
       downloadOptions: {
         quiet: true,
         getProgressCallback,
       },
     });
+    this.emit('downloaded', version, zipFile);
+    return zipFile;
   }
 
   public async ensureDownloadedImpl(version: string): Promise<string> {
@@ -132,6 +142,7 @@ export class Electron {
     // return the full path to the electron executable
     const electronExec = path.join(electronInstall, execSubpath());
     d(inspect({ electronExec, version }));
+    this.emit('installed', version, electronExec);
     return electronExec;
   }
 

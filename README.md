@@ -56,15 +56,19 @@ import { Runner } from 'electron-fiddle-runner';
 
 const runner = await Runner.create();
 
-// run or test a fiddle
-let result = await runner.test(versionString, '/path/to/fiddle');
-result = await runner.test(versionString, '/path/to/fiddle');
+// use a specific Electron version to run code from a local folder
+const result = await runner.test('13.1.7', '/path/to/fiddle');
 
-// bisect a fiddle
-const range = [versionString1, versionString2];
-const bisectResult = await runner.bisect(range, fiddle);
+// use a specific Electron version to run code from a github gist
+const result = await runner.test('14.0.0-beta.17', '642fa8daaebea6044c9079e3f8a46390');
 
-// see alsow `Runner.spawn()` and `Runner.spawnSync()` in Advanced Usage
+// use a specific Electron version to run code from a git repo
+const result = await runner.test('15.0.0-alpha.1', 'https://github.com/my/repo.git');
+
+// bisect a regression test across a range of Electron versions
+const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo);
+
+// see also `Runner.spawn()` and `Runner.spawnSync()` in Advanced Use
 ```
 
 ### Managing Electron Installations
@@ -73,6 +77,9 @@ const bisectResult = await runner.bisect(range, fiddle);
 import { Electron } from 'electron-fiddle-runner';
 
 const electron = new Electron();
+electron.on('downloaded', (version) => console.log(`Downloaded "${version}"`));
+electron.on('installed', (version) => console.log(`Installed "${version}"`));
+electron.on('removed', (version) => console.log(`Removed "${version}"`));
 
 // download a version of electron
 await electron.ensureDownloaded(versionString);
@@ -96,19 +103,19 @@ const exec = await electron.install(versionString);
 import { Versions } from 'electron-fiddle-runner';
 
 // - querying specific versions
-const elvers = await ElectronVersions.create();
-// expect(elvers.isVersion('12.0.0')).toBe(true);
-// expect(elvers.isVersion('12.99.99')).toBe(false);
-const { versions } = elvers;
+const elves = await ElectronVersions.create();
+// expect(elves.isVersion('12.0.0')).toBe(true);
+// expect(elves.isVersion('12.99.99')).toBe(false);
+const { versions } = elves;
 // expect(versions).find((ver) => ver.version === '12.0.0').not.toBeNull();
-// expect(versions[versions.length - 1]).toStrictEqual(elvers.latest);
+// expect(versions[versions.length - 1]).toStrictEqual(elves.latest);
 
 // - supported major versions
-const { supportedMajors } = elvers;
+const { supportedMajors } = elves;
 // expect(supportedMajors.length).toBe(4);
 
 // - querying prerelease branches
-const { supportedMajors, prereleaseMajors } = elvers;
+const { supportedMajors, prereleaseMajors } = elves;
 const newestSupported = Math.max(...supportedMajors);
 const oldestPrerelease = Math.min(...prereleaseMajors);
 // expect(newestSupported + 1).toBe(oldestPrerelease);
@@ -126,7 +133,7 @@ range = releases.inBranch(10);
 // expect(range.pop().version).toBe('10.4.7');
 ```
 
-## Advanced Usage
+## Advanced Use
 
 ### child_process.Spawn
 
@@ -171,33 +178,30 @@ const paths: Paths = {
 });
 
 const runner = await Runner.create({ paths });
-const child = await runner.spawn(versionString, fiddle);
 ```
 
 ### Manually Creating Fiddle Objects 
 
-Runner can do this for you; but if you want finer-grained control over
-the lifecycle of a Fiddle, you can instantiate them yourself:
+Runner will do this work for you; but if you want finer-grained control
+over the lifecycle of your Fiddle objects, you can instantiate them yourself:
 
 ```ts
-import { DefaultPaths, Fiddle, FiddleFactory } from 'electron-fiddle-runner';
+import { FiddleFactory } from 'electron-fiddle-runner';
 
-const factory = new FiddleFactory(DefaultPaths.fiddles);
-
-let fiddle: Fiddle;
+const factory = new FiddleFactory();
 
 // load a fiddle from a local directory
-fiddle = await factory.from('/path/to/fiddle'));
+const fiddle = await factory.from('/path/to/fiddle'));
 
 // ...or from a gist
-fiddle = await factory.from('642fa8daaebea6044c9079e3f8a46390'));
+const fiddle = await factory.from('642fa8daaebea6044c9079e3f8a46390'));
 
 // ...or from a git repo
-fiddle = await factory.from('https://github.com/my/testcase.git'));
+const fiddle = await factory.from('https://github.com/my/testcase.git'));
 
-// ...or from memory
-fiddle = await factory.from(new Map<string, string>(
+// ...or from an iterable of key / value entries
+const fiddle = await factory.from([
   ['main.js', '"use strict";'],
-);
+]);
 ```
 

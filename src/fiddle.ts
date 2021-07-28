@@ -19,7 +19,7 @@ export class Fiddle {
   ) {}
 }
 
-export type FiddleSource = Fiddle | string | Map<string, string>;
+export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
@@ -65,42 +65,37 @@ export class FiddleFactory {
     };
   }
 
-  public async create(source: FiddleSource): Promise<Fiddle | undefined> {
-    if (source instanceof Fiddle) {
-      return source;
-    }
-
-    if (source instanceof Map) {
-      return this.fromMem(source);
-    }
-    if (fs.existsSync(source)) {
-      return this.fromFolder(source);
-    }
-    if (source.startsWith('https://') || source.endsWith('.git')) {
-      return this.fromRepo(source);
-    }
-    if (/^[0-9A-Fa-f]{32}$/.test(source)) {
-      return this.fromGist(source);
-    }
-  }
-
-  public async fromMem(source: Map<string, string>): Promise<Fiddle> {
+  public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
     const d = debug('fiddle-runner:FiddleFactory:fromMem');
+    const map = new Map<string, string>(src);
 
     // make a tmp copy of this fiddle
-    const hash = hashString([...source.keys()].join(','));
+    const hash = hashString([...map.keys()].join(','));
     const folder = path.join(this.fiddles, hash);
     d({ folder });
 
     const promises: Promise<void>[] = [];
-    for (const [filename, content] of source.entries()) {
+    for (const [filename, content] of map.entries()) {
       promises.push(fs.outputFile(filename, content, 'utf8'));
     }
     await Promise.all(promises);
 
     return {
       mainPath: path.join(folder, 'main.js'),
-      source: 'memory',
+      source: 'entries',
     };
+  }
+
+  public async create(src: FiddleSource): Promise<Fiddle | undefined> {
+    if (src instanceof Fiddle) return src;
+
+    if (typeof src === 'string') {
+      if (fs.existsSync(src)) return this.fromFolder(src);
+      if (/^[0-9A-Fa-f]{32}$/.test(src)) return this.fromGist(src);
+      if (/^https:/.test(src) || /\.git$/.test(src)) return this.fromRepo(src);
+      return;
+    }
+
+    return this.fromEntries(src);
   }
 }

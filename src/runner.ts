@@ -206,7 +206,8 @@ export class Runner {
   }
 
   public async bisect(
-    version_range: [string, string],
+    version_a: string | SemVer,
+    version_b: string | SemVer,
     fiddleIn: FiddleSource,
     out = process.stdout,
   ): Promise<BisectResult> {
@@ -217,7 +218,7 @@ export class Runner {
       }
     };
 
-    const versions = this.versions.inRange(...version_range);
+    const versions = this.versions.inRange(version_a, version_b);
     const fiddle = await this.fiddleFactory.create(fiddleIn);
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
@@ -228,7 +229,7 @@ export class Runner {
         '📐 Bisect Requested',
         '',
         ` - gist is https://gist.github.com/${fiddle.source}`,
-        ` - the version range is [${version_range.join('..')}]`,
+        ` - the version range is [${version_a.toString()}..${version_b.toString()}]`,
         ` - there are ${versions.length} versions in this range:`,
         '',
         ...versions.map((ver, i) => `${displayIndex(i)} - ${ver.version}`),

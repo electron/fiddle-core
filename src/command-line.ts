@@ -12,7 +12,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
   const versions = await ElectronVersions.create();
   const fiddleFactory = new FiddleFactory();
   const runner = await Runner.create({ versions, fiddleFactory });
-  const versionParams: string[] = [];
+  const versionArgs: string[] = [];
 
   type Cmd = 'bisect' | 'test' | undefined;
   let cmd: Cmd = undefined;
@@ -27,7 +27,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
       d('it is test');
       cmd = 'test';
     } else if (versions.isVersion(param)) {
-      versionParams.push(param);
+      versionArgs.push(param);
     } else {
       fiddle = await fiddleFactory.create(param);
       if (fiddle) continue;
@@ -53,24 +53,20 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
   }
 
   if (cmd === 'test') {
-    if (versionParams.length === 1) {
-      await runner.test(versionParams[0], fiddle);
+    if (versionArgs.length === 1) {
+      await runner.test(versionArgs[0], fiddle);
     } else {
       console.error(
-        `Test must include exactly one Electron version. Got: ${versionParams.join(
-          ', ',
-        )}`,
+        `Test must use one Electron version. Got: ${versionArgs.join(', ')}`,
       );
       process.exit(1);
     }
   } else if (cmd === 'bisect') {
-    if (versionParams.length === 2) {
-      await runner.bisect([versionParams[0], versionParams[1]], fiddle);
+    if (versionArgs.length === 2) {
+      await runner.bisect(versionArgs[0], versionArgs[1], fiddle);
     } else {
       console.error(
-        `Test must include exactly two Electron versions. Got: ${versionParams.join(
-          ', ',
-        )}`,
+        `Bisect must use two Electron versions. Got: ${versionArgs.join(', ')}`,
       );
       process.exit(1);
     }
