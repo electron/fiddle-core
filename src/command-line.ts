@@ -6,22 +6,20 @@ import { ElectronVersions } from './versions';
 import { Fiddle, Fiddles } from './fiddle';
 import { Runner } from './runner';
 
-async function main() {
-  const d = debug('fiddle-runner:main');
+export async function runFromCommandLine(argv: string[]) {
+  const d = debug('fiddle-runner:runFromCommandLine');
 
+  d(inspect({ argv }));
   const elvers = await ElectronVersions.create();
   const runner = new Runner(new Electron(), elvers);
   const versions: string[] = [];
-
-  // skip past 'node' and 'cli.js'
-  const params = process.argv.slice(process.argv.indexOf(__filename) + 1);
 
   type Cmd = 'bisect' | 'test' | undefined;
   let cmd: Cmd = undefined;
   let fiddle: Fiddle | undefined = undefined;
 
-  d('params', inspect(params));
-  for (const param of params) {
+  d('argv', inspect(argv));
+  for (const param of argv) {
     d('param', param);
     if (param === 'bisect') {
       cmd = 'bisect';
@@ -78,5 +76,3 @@ async function main() {
     }
   }
 }
-
-void main();

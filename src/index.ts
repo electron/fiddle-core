@@ -9,6 +9,7 @@ import {
   TestResult,
 } from './runner';
 import { ElectronVersions, Versions } from './versions';
+import { runFromCommandLine } from './command-line';
 
 export {
   BisectResult,
@@ -24,4 +25,9 @@ export {
   SpawnSyncOptions,
   TestResult,
   Versions,
+  runFromCommandLine,
 };
+
+if (require.main === module) {
+  void runFromCommandLine(process.argv.slice(2));
+}
