@@ -1,18 +1,18 @@
 import { inspect } from 'util';
 import debug from 'debug';
 
-import { Electron } from './electron';
 import { ElectronVersions } from './versions';
-import { Fiddle, Fiddles } from './fiddle';
+import { Fiddle, FiddleFactory } from './fiddle';
 import { Runner } from './runner';
 
-export async function runFromCommandLine(argv: string[]) {
+export async function runFromCommandLine(argv: string[]): Promise<void> {
   const d = debug('fiddle-runner:runFromCommandLine');
 
   d(inspect({ argv }));
-  const elvers = await ElectronVersions.create();
-  const runner = new Runner(new Electron(), elvers);
-  const versions: string[] = [];
+  const versions = await ElectronVersions.create();
+  const fiddleFactory = new FiddleFactory();
+  const runner = await Runner.create({ versions, fiddleFactory });
+  const versionParams: string[] = [];
 
   type Cmd = 'bisect' | 'test' | undefined;
   let cmd: Cmd = undefined;
@@ -26,10 +26,10 @@ export async function runFromCommandLine(argv: string[]) {
     } else if (param === 'test' || param === 'start' || param === 'run') {
       d('it is test');
       cmd = 'test';
-    } else if (elvers.isVersion(param)) {
-      versions.push(param);
+    } else if (versions.isVersion(param)) {
+      versionParams.push(param);
     } else {
-      fiddle = await Fiddles.from(param);
+      fiddle = await fiddleFactory.create(param);
       if (fiddle) continue;
       console.error(
         `Unrecognized parameter "${param}". Must be 'test', 'start', 'bisect', a version, a gist, a folder, or a repo URL.`,
@@ -53,22 +53,22 @@ export async function runFromCommandLine(argv: string[]) {
   }
 
   if (cmd === 'test') {
-    if (versions.length === 1) {
-      await runner.test(versions[0], fiddle);
+    if (versionParams.length === 1) {
+      await runner.test(versionParams[0], fiddle);
     } else {
       console.error(
-        `Test must include exactly one Electron version. Got: ${versions.join(
+        `Test must include exactly one Electron version. Got: ${versionParams.join(
           ', ',
         )}`,
       );
       process.exit(1);
     }
   } else if (cmd === 'bisect') {
-    if (versions.length === 2) {
-      await runner.bisect([versions[0], versions[1]], fiddle);
+    if (versionParams.length === 2) {
+      await runner.bisect([versionParams[0], versionParams[1]], fiddle);
     } else {
       console.error(
-        `Test must include exactly two Electron versions. Got: ${versions.join(
+        `Test must include exactly two Electron versions. Got: ${versionParams.join(
           ', ',
         )}`,
       );

@@ -12,10 +12,14 @@ function hashString(str: string): string {
   return md5sum.digest('hex');
 }
 
-export interface Fiddle {
-  readonly mainPath: string;
-  readonly source: string;
+export class Fiddle {
+  constructor(
+    public readonly mainPath: string,
+    public readonly source: string,
+  ) {}
 }
+
+export type FiddleSource = Fiddle | string | Map<string, string>;
 
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
@@ -24,18 +28,18 @@ export class FiddleFactory {
     return this.fromRepo(`https://gist.github.com/${gistId}.git`);
   }
 
-  public async fromFolder(sourceFolder: string): Promise<Fiddle> {
+  public async fromFolder(source: string): Promise<Fiddle> {
     const d = debug('fiddle-runner:FiddleFactory:fromFolder');
 
     // make a tmp copy of this fiddle
-    const folder = path.join(this.fiddles, hashString(sourceFolder));
-    d({ sourceFolder, folder });
+    const folder = path.join(this.fiddles, hashString(source));
+    d({ source, folder });
     await fs.remove(folder);
-    await fs.copy(sourceFolder, folder);
+    await fs.copy(source, folder);
 
     return {
       mainPath: path.join(folder, 'main.js'),
-      source: sourceFolder,
+      source,
     };
   }
 
@@ -61,7 +65,14 @@ export class FiddleFactory {
     };
   }
 
-  public async from(source: string): Promise<Fiddle | undefined> {
+  public async create(source: FiddleSource): Promise<Fiddle | undefined> {
+    if (source instanceof Fiddle) {
+      return source;
+    }
+
+    if (source instanceof Map) {
+      return this.fromMem(source);
+    }
     if (fs.existsSync(source)) {
       return this.fromFolder(source);
     }
@@ -93,5 +104,3 @@ export class FiddleFactory {
     };
   }
 }
-
-export const Fiddles = new FiddleFactory();

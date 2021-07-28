@@ -62,12 +62,11 @@ export class Electron {
   }
 
   private async download(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Electron:${version}:downloadElectron`);
     let pctDone = 0;
     const getProgressCallback = (progress: ProgressObject) => {
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
-        d(`${pct >= 100 ? '🏁' : '⏳'} downloaded ${pct}%`);
+        console.log(`${pct >= 100 ? '🏁' : '⏳'} downloaded ${pct}%`);
         pctDone = pct;
       }
     };

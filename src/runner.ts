@@ -4,12 +4,13 @@ import * as os from 'os';
 import * as path from 'path';
 import debug from 'debug';
 import getos from 'getos';
+import { SemVer } from 'semver';
 import { Writable } from 'stream';
 import { inspect } from 'util';
 
 import { Electron, execSubpath } from './electron';
 import { ElectronVersions, Versions } from './versions';
-import { Fiddle } from './fiddle';
+import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
 export interface SpawnOptions extends child_process.SpawnOptions {
@@ -34,20 +35,25 @@ export interface BisectResult {
 export class Runner {
   private osInfo = '';
 
-  public constructor(
+  private constructor(
     private readonly electron: Electron,
     private readonly versions: Versions,
+    private readonly fiddleFactory: FiddleFactory,
   ) {
     getos((err, result) => (this.osInfo = inspect(result || err)));
   }
 
   public static async create(opts: {
-    paths: Partial<Paths>;
+    electron?: Electron;
+    fiddleFactory?: FiddleFactory;
+    paths?: Partial<Paths>;
     versions?: Versions;
   }): Promise<Runner> {
-    const paths = { ...DefaultPaths, ...opts.paths };
+    const paths = { ...DefaultPaths, ...(opts.paths || {}) };
+    const electron = opts.electron || new Electron(paths);
     const versions = opts.versions || (await ElectronVersions.create(paths));
-    return new Runner(new Electron(paths), versions);
+    const factory = opts.fiddleFactory || new FiddleFactory(paths.fiddles);
+    return new Runner(electron, versions, factory);
   }
 
   private async getExec(val: string): Promise<string> {
@@ -94,13 +100,17 @@ export class Runner {
   }
 
   public async spawn(
-    version: string,
-    fiddle: Fiddle,
-    opts: SpawnOptions,
+    versionIn: string | SemVer,
+    fiddleIn: FiddleSource,
+    opts: SpawnOptions = {},
   ): Promise<child_process.ChildProcess> {
     const d = debug('fiddle-runner:Runner.spawn');
 
+    // process the input parameters
     opts = { out: process.stdout, headless: false, ...opts };
+    const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
+    const fiddle = await this.fiddleFactory.create(fiddleIn);
+    if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
@@ -119,13 +129,17 @@ export class Runner {
   }
 
   public async spawnSync(
-    version: string,
-    fiddle: Fiddle,
+    versionIn: string | SemVer,
+    fiddleIn: FiddleSource,
     opts: SpawnSyncOptions = {},
   ): Promise<child_process.SpawnSyncReturns<string>> {
     const d = debug('fiddle-runner:Runner.spawnSync');
 
+    // process the input parameters
     opts = { headless: false, out: process.stdout, ...opts };
+    const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
+    const fiddle = await this.fiddleFactory.create(fiddleIn);
+    if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
@@ -178,8 +192,8 @@ export class Runner {
   }
 
   public async test(
-    version: string,
-    fiddle: Fiddle,
+    version: string | SemVer,
+    fiddle: FiddleSource,
     out = process.stdout,
   ): Promise<TestResult> {
     const result = await this.spawnSync(version, fiddle, { out });
@@ -193,7 +207,7 @@ export class Runner {
 
   public async bisect(
     version_range: [string, string],
-    fiddle: Fiddle,
+    fiddleIn: FiddleSource,
     out = process.stdout,
   ): Promise<BisectResult> {
     const log = (first: unknown, ...rest: unknown[]) => {
@@ -204,6 +218,8 @@ export class Runner {
     };
 
     const versions = this.versions.inRange(...version_range);
+    const fiddle = await this.fiddleFactory.create(fiddleIn);
+    if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
     const displayIndex = (i: number) => '#' + i.toString().padStart(4, ' ');
 

@@ -16,7 +16,7 @@ $ electron-fiddle-runner test 12.0.0 642fa8daaebea6044c9079e3f8a46390
 $ electron-fiddle-runner bisect 8.0.0 13.0.0 https://github.com/my/testcase.git
 
 
-$ electron-fiddle-runner bisect 642fa8daaebea6044c9079e3f8a46390 8.0.0 13.0.0
+$ electron-fiddle-runner bisect 8.0.0 13.0.0 642fa8daaebea6044c9079e3f8a46390
 ...
 🏁 finished bisecting across 438 versions...
 # 219 🟢 passed 11.0.0-nightly.20200611 (test #1)
@@ -39,57 +39,35 @@ Done in 28.19s.
 
 ## API
 
-### Hello World
+### Hello, World!
 
 ```ts
-import { Fiddles, Runner } from 'electron-fiddle-runner';
+import { Runner } from 'electron-fiddle-runner';
 
-const fiddle = await Fiddles.from('/path/to/fiddle'));
 const runner = await Runner.create();
-const testResult = await runner.test(versionString, fiddle, process.stdout);
-console.log(testResult.status);
-```
-
-### Getting a Fiddle
-
-```ts
-import { Fiddles } from 'electron-fiddle-runner';
-
-// load a fiddle from a local directory
-let fiddle = await Fiddles.from('/path/to/fiddle'));
-
-// ...or from a gist
-fiddle = await Fiddles.from('642fa8daaebea6044c9079e3f8a46390'));
-
-// ...or from a git repo
-fiddle = await Fiddles.from('https://github.com/my/testcase.git'));
-
-// ...or from memory
-fiddle = await Fiddles.fromMem(new Map<string, string>([
-  ['main.js', '// main.js'],
-]));
+const { status } = await runner.test(versionString, '/path/to/fiddle');
+console.log(status);
 ```
 
 ### Running Fiddles
 
-```
-import { Fiddles, Runner } from 'electron-fiddle-runner';
+```ts
+import { Runner } from 'electron-fiddle-runner';
 
 const runner = await Runner.create();
 
-// lower-level utils to spawn a fiddle
-const result = await runner.spawnSync(versionString, fiddle, nodeSpawnSyncOpts);
-const child = await runner.spawn(versionString, fiddle, nodeSpawnOpts);
+// run or test a fiddle
+let result = await runner.test(versionString, '/path/to/fiddle');
+result = await runner.test(versionString, '/path/to/fiddle');
 
-// ...or test a fiddle
-const testResult = await runner.test(versionString, fiddle, process.stdout);
-
-// ...or bisect a fiddle
+// bisect a fiddle
 const range = [versionString1, versionString2];
-const bisectResult = await runner.bisect(range, fiddle, process.stdout);
+const bisectResult = await runner.bisect(range, fiddle);
+
+// see alsow `Runner.spawn()` and `Runner.spawnSync()` in Advanced Usage
 ```
 
-### Electron Installations
+### Managing Electron Installations
 
 ```ts
 import { Electron } from 'electron-fiddle-runner';
@@ -122,7 +100,7 @@ const elvers = await ElectronVersions.create();
 // expect(elvers.isVersion('12.0.0')).toBe(true);
 // expect(elvers.isVersion('12.99.99')).toBe(false);
 const { versions } = elvers;
-// expect(versions).toInclude('12.0.0'));
+// expect(versions).find((ver) => ver.version === '12.0.0').not.toBeNull();
 // expect(versions[versions.length - 1]).toStrictEqual(elvers.latest);
 
 // - supported major versions
@@ -148,20 +126,35 @@ range = releases.inBranch(10);
 // expect(range.pop().version).toBe('10.4.7');
 ```
 
+## Advanced Usage
+
+### child_process.Spawn
+
+```ts
+import { Runner } from 'electron-fiddle-runner';
+
+// third argument is same as node.spawnSync()'s opts
+const result = await runner.spawnSync('12.0.0', fiddle, nodeSpawnSyncOpts);
+
+// third argument is same as node.spawn()'s opts
+const child = await runner.spawn('12.0.1', fiddle, nodeSpawnOpts);
+
+// see also `Runner.test()` and `Runner.bisect()` above
+```
+
 ### Using Local Builds
 
 ```ts
-import { Fiddles, Runner } from 'electron-fiddle-runner';
+import { Runner } from 'electron-fiddle-runner';
 
-const fiddle = await Fiddles.from('/path/to/fiddle'));
 const runner = await Runner.create();
-const testResult = await runner.test('/path/to/electron/build', fiddle, process.stdout);
+const testResult = await runner.test('/path/to/electron/build', fiddle);
 ```
 
 ### Using Custom Paths
 
 ```ts
-import { Paths, FiddleFactory, Electron, Runner } from 'electron-fiddle-runner';
+import { Paths, Runner } from 'electron-fiddle-runner';
 
 const paths: Paths = {
   // where to store zipfiles of downloaded electron versions
@@ -177,8 +170,34 @@ const paths: Paths = {
   versionsCache: '/tmp/my/releases.json',
 });
 
-const runner = await Runner.create(paths);
-const fiddles = new FiddleFactory(paths);
-const child = await runner.spawn(versionString, fiddles.create('/path/to/fiddle'));
+const runner = await Runner.create({ paths });
+const child = await runner.spawn(versionString, fiddle);
+```
+
+### Manually Creating Fiddle Objects 
+
+Runner can do this for you; but if you want finer-grained control over
+the lifecycle of a Fiddle, you can instantiate them yourself:
+
+```ts
+import { DefaultPaths, Fiddle, FiddleFactory } from 'electron-fiddle-runner';
+
+const factory = new FiddleFactory(DefaultPaths.fiddles);
+
+let fiddle: Fiddle;
+
+// load a fiddle from a local directory
+fiddle = await factory.from('/path/to/fiddle'));
+
+// ...or from a gist
+fiddle = await factory.from('642fa8daaebea6044c9079e3f8a46390'));
+
+// ...or from a git repo
+fiddle = await factory.from('https://github.com/my/testcase.git'));
+
+// ...or from memory
+fiddle = await factory.from(new Map<string, string>(
+  ['main.js', '"use strict";'],
+);
 ```
 
