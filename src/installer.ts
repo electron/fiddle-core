@@ -85,8 +85,14 @@ export class Installer extends EventEmitter {
   }
 
   public async remove(version: string): Promise<void> {
+    // remove the zipfile
     const zip = path.join(this.paths.electronDownloads, getZipName(version));
     await fs.remove(zip);
+
+    // maybe uninstall it
+    if (this.installedVersion === version)
+      await fs.remove(this.paths.electronInstall);
+
     this.stateMap.delete(version);
     this.emit('state-changed', version, 'not_downloaded');
   }
@@ -169,7 +175,8 @@ export class Installer extends EventEmitter {
     this.installing = version;
 
     // see if the current version (if any) is already `version`
-    if (this.installedVersion === version) {
+    const { installedVersion } = this;
+    if (installedVersion === version) {
       d(`already installed`);
     } else {
       const zipFile = await this.ensureDownloaded(version);
@@ -186,6 +193,7 @@ export class Installer extends EventEmitter {
         process.noAsar = noAsar; // eslint-disable-line
       }
       this.setState(version, 'installed');
+      if (installedVersion) this.setState(installedVersion, 'downloaded');
       this.emit('installed', version, electronExec);
     }
 
