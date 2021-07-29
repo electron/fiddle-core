@@ -45,7 +45,7 @@ Done in 28.19s.
 import { Runner } from 'electron-fiddle-runner';
 
 const runner = await Runner.create();
-const { status } = await runner.test(versionString, '/path/to/fiddle');
+const { status } = await runner.run(versionString, '/path/to/fiddle');
 console.log(status);
 ```
 
@@ -57,13 +57,17 @@ import { Runner } from 'electron-fiddle-runner';
 const runner = await Runner.create();
 
 // use a specific Electron version to run code from a local folder
-const result = await runner.test('13.1.7', '/path/to/fiddle');
+const result = await runner.run('13.1.7', '/path/to/fiddle');
 
 // use a specific Electron version to run code from a github gist
-const result = await runner.test('14.0.0-beta.17', '642fa8daaebea6044c9079e3f8a46390');
+const result = await runner.run('14.0.0-beta.17', '642fa8daaebea6044c9079e3f8a46390');
 
 // use a specific Electron version to run code from a git repo
-const result = await runner.test('15.0.0-alpha.1', 'https://github.com/my/repo.git');
+const result = await runner.run('15.0.0-alpha.1', 'https://github.com/my/repo.git');
+
+// use a specific Electron version to run code from iterable filename/content pairs
+const files = new Map<string, string>([['main.js', '"use strict";']]);
+const result = await runner.run('15.0.0-alpha.1', files);
 
 // bisect a regression test across a range of Electron versions
 const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo);
@@ -84,16 +88,16 @@ electron.on('removed', (version) => console.log(`Removed "${version}"`));
 // download a version of electron
 await electron.ensureDownloaded('12.0.15');
 // expect(await electron.isDownloaded('12.0.15')).toBe(true);
-// expect(await electron.downloaded().map((semver) => semver.version)).toContain('12.0.5');
+// expect(await electron.downloaded()).toContain('12.0.5');
 
 // remove a download
 await electron.remove('12.0.15');
 // expect(await electron.isDownloaded('12.0.15')).toBe(false);
-// expect(await electron.downloaded().map((semver) => semver.version)).not.toContain('12.0.5');
+// expect(await electron.downloadedVersions()).not.toContain('12.0.5');
 
 // install a specific version for the runner to use
 const exec = await electron.install('11.4.10');
-// expect(await electron.isDownloaded('11.4.10')).toBe(true);
+// expect(fs.accessSync(exec, fs.constants.X_OK)).toBe(true);
 ```
 
 ### Versions
@@ -145,7 +149,7 @@ const result = await runner.spawnSync('12.0.0', fiddle, nodeSpawnSyncOpts);
 // third argument is same as node.spawn()'s opts
 const child = await runner.spawn('12.0.1', fiddle, nodeSpawnOpts);
 
-// see also `Runner.test()` and `Runner.bisect()` above
+// see also `Runner.run()` and `Runner.bisect()` above
 ```
 
 ### Using Local Builds
@@ -154,7 +158,7 @@ const child = await runner.spawn('12.0.1', fiddle, nodeSpawnOpts);
 import { Runner } from 'electron-fiddle-runner';
 
 const runner = await Runner.create();
-const testResult = await runner.test('/path/to/electron/build', fiddle);
+const result = await runner.run('/path/to/electron/build', fiddle);
 ```
 
 ### Using Custom Paths

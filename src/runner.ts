@@ -49,7 +49,7 @@ export class Runner {
     paths?: Partial<Paths>;
     versions?: Versions;
   }): Promise<Runner> {
-    const paths = { ...DefaultPaths, ...(opts.paths || {}) };
+    const paths = Object.freeze({ ...DefaultPaths, ...(opts.paths || {}) });
     const electron = opts.electron || new Electron(paths);
     const versions = opts.versions || (await ElectronVersions.create(paths));
     const factory = opts.fiddleFactory || new FiddleFactory(paths.fiddles);
@@ -71,7 +71,7 @@ export class Runner {
       '',
       `  - date: ${new Date().toISOString()}`,
       '',
-      `  - fiddle:`,
+      '  - fiddle:',
       `      - source: ${fiddle.source}`,
       `      - local copy: ${path.dirname(fiddle.mainPath)}`,
       '',
@@ -191,7 +191,7 @@ export class Runner {
     }
   }
 
-  public async test(
+  public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
     out = process.stdout,
@@ -248,7 +248,7 @@ export class Runner {
       testOrder.push(mid);
       log(`bisecting, range [${left}..${right}], mid ${mid} (${ver.version})`);
 
-      result = await this.test(ver.version, fiddle, out);
+      result = await this.run(ver.version, fiddle, out);
       results[mid] = result;
       log(`${Runner.displayResult(result)} ${versions[mid].version}\n`);
 

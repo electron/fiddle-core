@@ -52,23 +52,20 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
     process.exit(1);
   }
 
-  if (cmd === 'test') {
-    if (versionArgs.length === 1) {
-      await runner.test(versionArgs[0], fiddle);
-    } else {
-      console.error(
-        `Test must use one Electron version. Got: ${versionArgs.join(', ')}`,
-      );
-      process.exit(1);
-    }
-  } else if (cmd === 'bisect') {
-    if (versionArgs.length === 2) {
-      await runner.bisect(versionArgs[0], versionArgs[1], fiddle);
-    } else {
-      console.error(
-        `Bisect must use two Electron versions. Got: ${versionArgs.join(', ')}`,
-      );
-      process.exit(1);
-    }
+  if (cmd === 'test' && versionArgs.length === 1) {
+    const result = await runner.run(versionArgs[0], fiddle);
+    const vals = ['test_passed', 'test_failed', 'test_error', 'system_error'];
+    process.exitCode = vals.indexOf(result.status);
+    return;
   }
+
+  if (cmd === 'bisect' && versionArgs.length === 2) {
+    const result = await runner.bisect(versionArgs[0], versionArgs[1], fiddle);
+    const vals = ['bisect_succeeded', 'test_error', 'system_error'];
+    process.exitCode = vals.indexOf(result.status);
+    return;
+  }
+
+  console.error(`Invalid parameters. Got ${cmd}, ${versionArgs.join(', ')}`);
+  process.exit(1);
 }

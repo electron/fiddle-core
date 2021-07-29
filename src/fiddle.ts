@@ -3,6 +3,7 @@ import * as path from 'path';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
+import { inspect } from 'util';
 
 import { DefaultPaths } from './paths';
 
@@ -14,11 +15,17 @@ function hashString(str: string): string {
 
 export class Fiddle {
   constructor(
-    public readonly mainPath: string,
+    public readonly mainPath: string, // /path/to/main.js
     public readonly source: string,
   ) {}
 }
 
+/**
+ * - Iterable<string, string> - filename-to-content key/value pairs
+ * - string of form '/path/to/fiddle' - a fiddle on the filesystem
+ * - string of form 'https://github.com/my/repo.git' - a git repo fiddle
+ * - string of form '642fa8daaebea6044c9079e3f8a46390' - a github gist fiddle
+ */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
 export class FiddleFactory {
@@ -37,10 +44,7 @@ export class FiddleFactory {
     await fs.remove(folder);
     await fs.copy(source, folder);
 
-    return {
-      mainPath: path.join(folder, 'main.js'),
-      source,
-    };
+    return new Fiddle(path.join(folder, 'main.js'), source);
   }
 
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
@@ -59,10 +63,7 @@ export class FiddleFactory {
     await git.checkout(checkout);
     await git.pull('origin', checkout);
 
-    return {
-      mainPath: path.join(folder, 'main.js'),
-      source: url,
-    };
+    return new Fiddle(path.join(folder, 'main.js'), url);
   }
 
   public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
@@ -80,10 +81,7 @@ export class FiddleFactory {
     }
     await Promise.all(promises);
 
-    return {
-      mainPath: path.join(folder, 'main.js'),
-      source: 'entries',
-    };
+    return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }
 
   public async create(src: FiddleSource): Promise<Fiddle | undefined> {

@@ -25,6 +25,9 @@ function getZipName(version: string): string {
 
 type ProgressObject = { percent: number };
 
+/**
+ * Manage downloading and installation of Electron versions for use with Runner.
+ */
 export class Electron extends EventEmitter {
   private readonly paths: Paths;
 
@@ -39,7 +42,7 @@ export class Electron extends EventEmitter {
     this.emit('removed', version);
   }
 
-  public async installed(): Promise<string | undefined> {
+  public async installedVersion(): Promise<string | undefined> {
     try {
       const versionFile = path.join(this.paths.electronInstall, 'version');
       return await fs.readFile(versionFile, 'utf8');
@@ -53,7 +56,7 @@ export class Electron extends EventEmitter {
     return fs.existsSync(zip);
   }
 
-  public async downloaded(): Promise<string[]> {
+  public async downloadedVersions(): Promise<string[]> {
     const version = 'fnord';
     const test = getZipName(version);
     const prefix = test.substring(0, test.indexOf(version));
@@ -74,7 +77,7 @@ export class Electron extends EventEmitter {
     const getProgressCallback = (progress: ProgressObject) => {
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
-        console.log(`${pct >= 100 ? '🏁' : '⏳'} downloaded ${pct}%`);
+        console.log(`${pct >= 100 ? '🏁' : '⏳'} downloading ${version} - ${pct}%`);
         pctDone = pct;
       }
     };
@@ -129,7 +132,7 @@ export class Electron extends EventEmitter {
     const { electronInstall } = this.paths;
 
     // see if the current version (if any) is already `version`
-    const currentVersion = await this.installed();
+    const currentVersion = await this.installedVersion();
     if (currentVersion === version) {
       d(`already installed`);
     } else {

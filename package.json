@@ -17,7 +17,7 @@
     "lint:prettier": "prettier --check package.json src/**/*.ts",
     "lint:prettier:fix": "prettier --write package.json src/**/*.ts",
     "make": "run-p build",
-    "start": "node lib/cli.js",
+    "start": "node lib/index.js",
     "test": "jest",
     "test:ci": "jest --runInBand --coverage"
   },
