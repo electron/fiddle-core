@@ -25,51 +25,78 @@ function getZipName(version: string): string {
 
 type ProgressObject = { percent: number };
 
+export type InstallState =
+  | 'not-downloaded'
+  | 'downloading'
+  | 'downloaded'
+  | 'installing'
+  | 'installed';
+
 /**
  * Manage downloading and installation of Electron versions for use with Runner.
  */
 export class Electron extends EventEmitter {
   private readonly paths: Paths;
+  private readonly states = new Map<string, InstallState>();
 
   constructor(pathsIn: Partial<Paths> = {}) {
     super();
-    this.paths = { ...DefaultPaths, ...pathsIn };
+    this.paths = Object.freeze({ ...DefaultPaths, ...pathsIn });
+    this.rebuildStates();
+  }
+
+  private setState(version: string, state: InstallState) {
+    this.states.set(version, state);
+    this.emit(state, version);
+  }
+
+  private rebuildStates() {
+    this.states.clear();
+
+    // currently installed...
+    try {
+      const versionFile = path.join(this.paths.electronInstall, 'version');
+      const version = fs.readFileSync(versionFile, 'utf8');
+      this.setState(version, 'installed');
+    } catch {
+      // no current version
+    }
+
+    if (this.installing) {
+      this.setState(this.installing, 'installing');
+    }
+
+    // already downloaded...
+    const str = `^electron-v(.*)-${process.platform}-${process.arch}.zip$`;
+    const reg = new RegExp(str);
+    for (const file of fs.readdirSync(this.paths.electronDownloads)) {
+      const match = reg.exec(file);
+      if (match) this.setState(match[1], 'downloaded');
+    }
+
+    // being downloaded now...
+    for (const version of this.downloading.keys()) {
+      this.setState(version, 'downloading');
+    }
   }
 
   public async remove(version: string): Promise<void> {
     const zip = path.join(this.paths.electronDownloads, getZipName(version));
     await fs.remove(zip);
-    this.emit('removed', version);
+    this.states.delete(version);
+    this.emit('not-downloaded', version);
   }
 
-  public async installedVersion(): Promise<string | undefined> {
-    try {
-      const versionFile = path.join(this.paths.electronInstall, 'version');
-      return await fs.readFile(versionFile, 'utf8');
-    } catch {
-      // no current version
-    }
+  public get installedVersion(): string | undefined {
+    for (const [version, state] of this.states)
+      if (state === 'installed') return version;
   }
 
   public isDownloaded(version: string): boolean {
-    const zip = path.join(this.paths.electronDownloads, getZipName(version));
-    return fs.existsSync(zip);
-  }
-
-  public async downloadedVersions(): Promise<string[]> {
-    const version = 'fnord';
-    const test = getZipName(version);
-    const prefix = test.substring(0, test.indexOf(version));
-    const suffix = test.substring(test.indexOf(version) + version.length);
-
-    const downloaded: string[] = [];
-    for (const file of await fs.readdir(this.paths.electronDownloads)) {
-      if (file.startsWith(prefix) && file.endsWith(suffix)) {
-        downloaded.push(file.replace(prefix, '').replace(suffix, ''));
-      }
-    }
-
-    return downloaded;
+    const state = this.states.get(version);
+    return (
+      state === 'downloaded' || state === 'installing' || state === 'installed'
+    );
   }
 
   private async download(version: string): Promise<string> {
@@ -77,7 +104,7 @@ export class Electron extends EventEmitter {
     const getProgressCallback = (progress: ProgressObject) => {
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
-        console.log(`${pct >= 100 ? '🏁' : '⏳'} downloading ${version} - ${pct}%`);
+        console.log(`${pct >= 100 ? '🏁' : '⏳'} dl ${version} - ${pct}%`);
         pctDone = pct;
       }
     };
@@ -87,7 +114,6 @@ export class Electron extends EventEmitter {
         getProgressCallback,
       },
     });
-    this.emit('downloaded', version, zipFile);
     return zipFile;
   }
 
@@ -98,13 +124,16 @@ export class Electron extends EventEmitter {
       this.paths.electronDownloads,
       getZipName(version),
     );
-    if (fs.existsSync(zipFile)) {
+    if (this.isDownloaded(version)) {
       d(`"${zipFile}" exists; no need to download`);
     } else {
+      this.setState(version, 'downloading');
       d(`"${zipFile}" does not exist; downloading now`);
       const tempFile = await this.download(version);
       await fs.ensureDir(this.paths.electronDownloads);
       await fs.move(tempFile, zipFile);
+      this.setState(version, 'downloaded');
+      this.emit('downloaded', version, zipFile);
       d(`"${zipFile}" downloaded`);
     }
 
@@ -125,36 +154,36 @@ export class Electron extends EventEmitter {
     return promise;
   }
 
-  private installing: Promise<string> | undefined;
+  private installing: string | undefined;
 
-  private async installImpl(version: string): Promise<string> {
+  public async install(version: string): Promise<string> {
     const d = debug(`fiddle-runner:Electron:${version}:installImpl`);
     const { electronInstall } = this.paths;
+    const electronExec = path.join(electronInstall, execSubpath());
+
+    if (this.installing) throw new Error(`Currently installing "${version}"`);
+    this.installing = version;
 
     // see if the current version (if any) is already `version`
-    const currentVersion = await this.installedVersion();
-    if (currentVersion === version) {
+    if (this.installedVersion === version) {
       d(`already installed`);
     } else {
       const zipFile = await this.ensureDownloaded(version);
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
       await extract(zipFile, { dir: electronInstall });
+      this.setState(version, 'installed');
+      this.emit('installed', version, electronExec);
     }
 
+    delete this.installing;
+
     // return the full path to the electron executable
-    const electronExec = path.join(electronInstall, execSubpath());
     d(inspect({ electronExec, version }));
-    this.emit('installed', version, electronExec);
     return electronExec;
   }
 
-  public async install(version: string): Promise<string> {
-    if (!this.installing) {
-      this.installing = this.installImpl(version);
-    } else {
-      this.installing = this.installing.then(() => this.installImpl(version));
-    }
-    return this.installing;
+  public state(version: string): InstallState {
+    return this.states.get(version) || 'not-downloaded';
   }
 }

@@ -87,13 +87,11 @@ electron.on('removed', (version) => console.log(`Removed "${version}"`));
 
 // download a version of electron
 await electron.ensureDownloaded('12.0.15');
-// expect(await electron.isDownloaded('12.0.15')).toBe(true);
-// expect(await electron.downloaded()).toContain('12.0.5');
+// expect(electron.state('12.0.5').toBe('downloaded');
 
 // remove a download
 await electron.remove('12.0.15');
-// expect(await electron.isDownloaded('12.0.15')).toBe(false);
-// expect(await electron.downloadedVersions()).not.toContain('12.0.5');
+// expect(elecctron.state('12.0.15').toBe('not-downloaded');
 
 // install a specific version for the runner to use
 const exec = await electron.install('11.4.10');
