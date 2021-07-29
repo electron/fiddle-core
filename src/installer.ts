@@ -50,6 +50,7 @@ export class Installer extends EventEmitter {
   }
 
   private setState(version: string, state: InstallState) {
+    if (this.stateMap.get(version) === state) return;
     this.stateMap.set(version, state);
     this.emit('state-changed', version, state);
   }
@@ -114,7 +115,8 @@ export class Installer extends EventEmitter {
     const getProgressCallback = (progress: ProgressObject) => {
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
-        console.log(`${pct >= 100 ? '🏁' : '⏳'} dl ${version} - ${pct}%`);
+        const emoji = pct >= 100 ? '🏁' : '⏳';
+        console.log(`${emoji} downloading ${version} - ${pct}%`);
         pctDone = pct;
       }
     };
@@ -206,9 +208,5 @@ export class Installer extends EventEmitter {
 
   public state(version: string): InstallState {
     return this.stateMap.get(version) || 'not_downloaded';
-  }
-
-  public get states(): Map<string, InstallState> {
-    return new Map(this.stateMap.entries());
   }
 }
