@@ -13,21 +13,21 @@ import { ElectronVersions, Versions } from './versions';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
-export interface RunnerSpawnOptions {
+interface RunnerOptions {
   headless?: boolean;
   out?: Stream.Writable;
-  verbose?: boolean;
+  showConfig?: boolean;
 }
 
-const defaultRunnerOpts: RunnerSpawnOptions = {
+const DefaultRunnerOpts: RunnerOptions = Object.freeze({
   headless: false,
   out: process.stdout,
-  verbose: true,
-};
+  showConfig: true,
+});
 
-export type SpawnOptions = childproc.SpawnOptions & RunnerSpawnOptions;
+export type SpawnOptions = childproc.SpawnOptions & RunnerOptions;
 
-export type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerSpawnOptions;
+export type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerOptions;
 
 export interface TestResult {
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
@@ -118,7 +118,7 @@ export class Runner {
     const d = debug('fiddle-runner:Runner.spawn');
 
     // process the input parameters
-    opts = { ...defaultRunnerOpts, ...opts };
+    opts = { ...DefaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
     const fiddle = await this.fiddleFactory.create(fiddleIn);
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
@@ -133,7 +133,7 @@ export class Runner {
 
     const child = childproc.spawn(exec, args, opts);
 
-    if (opts.verbose && child.stdout)
+    if (opts.showConfig && child.stdout)
       child.stdout.push(this.spawnInfo(version, electronExec, fiddle));
 
     return child;
@@ -147,7 +147,7 @@ export class Runner {
     const d = debug('fiddle-runner:Runner.spawnSync');
 
     // process the input parameters
-    opts = { ...defaultRunnerOpts, ...opts };
+    opts = { ...DefaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
     const fiddle = await this.fiddleFactory.create(fiddleIn);
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
@@ -165,7 +165,7 @@ export class Runner {
     });
 
     if (opts.out) {
-      if (opts.verbose)
+      if (opts.showConfig)
         opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
       opts.out.write(result.stdout);
     }
@@ -203,9 +203,9 @@ export class Runner {
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
-    out: Stream.Writable = process.stdout,
+    opts: SpawnSyncOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
-    const result = await this.spawnSync(version, fiddle, { out });
+    const result = await this.spawnSync(version, fiddle, opts);
     const { error, status } = result;
 
     if (error) return { status: 'system_error' };
@@ -218,8 +218,9 @@ export class Runner {
     version_a: string | SemVer,
     version_b: string | SemVer,
     fiddleIn: FiddleSource,
-    out: Stream.Writable = process.stdout,
+    opts: SpawnSyncOptions = DefaultRunnerOpts,
   ): Promise<BisectResult> {
+    const { out } = opts;
     const log = (first: unknown, ...rest: unknown[]) => {
       if (out) {
         out.write([first, ...rest].join(' '));
@@ -237,7 +238,7 @@ export class Runner {
       [
         '📐 Bisect Requested',
         '',
-        ` - gist is https://gist.github.com/${fiddle.source}`,
+        ` - gist is ${fiddle.source}`,
         ` - the version range is [${version_a.toString()}..${version_b.toString()}]`,
         ` - there are ${versions.length} versions in this range:`,
         '',
@@ -245,7 +246,7 @@ export class Runner {
       ].join('\n'),
     );
 
-    // basically a binary search
+    // bisect through the releases
     let left = 0;
     let right = versions.length - 1;
     let result: TestResult | undefined = undefined;
@@ -257,7 +258,7 @@ export class Runner {
       testOrder.push(mid);
       log(`bisecting, range [${left}..${right}], mid ${mid} (${ver.version})`);
 
-      result = await this.run(ver.version, fiddle, out);
+      result = await this.run(ver.version, fiddle, opts);
       results[mid] = result;
       log(`${Runner.displayResult(result)} ${versions[mid].version}\n`);
 
@@ -296,7 +297,7 @@ export class Runner {
           `${Runner.displayResult(results[left])} ${good}`,
           `${Runner.displayResult(results[right])} ${bad}`,
           'Commits between versions:',
-          `↔ https://github.com/electron/electron/compare/v${good}...v${bad}`,
+          `https://github.com/electron/electron/compare/v${good}...v${bad} ↔`,
         ].join('\n'),
       );
     } else {
@@ -308,13 +309,10 @@ export class Runner {
         range: [versions[left].version, versions[right].version],
         status: 'bisect_succeeded',
       };
-    } else if (
-      result?.status === 'test_error' ||
-      result?.status === 'system_error'
-    ) {
+    }
+    if (result?.status === 'test_error' || result?.status === 'system_error') {
       return { status: result.status };
     }
-
     return { status: 'system_error' };
   }
 }

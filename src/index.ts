@@ -14,11 +14,11 @@ import { runFromCommandLine } from './command-line';
 export {
   BisectResult,
   DefaultPaths,
-  Installer,
   ElectronVersions,
   Fiddle,
   FiddleFactory,
   InstallState,
+  Installer,
   Paths,
   Runner,
   SpawnOptions,
