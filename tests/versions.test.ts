@@ -72,9 +72,9 @@ describe('BaseVersions', () => {
     });
   });
 
-  describe('inBranch()', () => {
+  describe('inMajor()', () => {
     it('returns all the versions in a branch', () => {
-      const range = testVersions.inBranch(10);
+      const range = testVersions.inMajor(10);
       expect(range.length).toBe(101);
       expect(range.shift()!.version).toBe('10.0.0-nightly.20200209');
       expect(range.pop()!.version).toBe('10.4.7');

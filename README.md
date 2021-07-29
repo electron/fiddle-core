@@ -128,8 +128,8 @@ let range = releases.inRange('12.0.0', '12.0.15');
 // expect(range.shift().version).toBe('12.0.0');
 // expect(range.pop().version).toBe('12.0.15');
 
-// - get all releases in a branch
-range = releases.inBranch(10);
+// - get all 10-x-y releases
+range = releases.inMajor(10);
 // expect(range.length).toBe(101);
 // expect(range.shift().version).toBe('10.0.0-nightly.20200209');
 // expect(range.pop().version).toBe('10.4.7');

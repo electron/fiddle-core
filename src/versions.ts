@@ -10,16 +10,22 @@ import { DefaultPaths, Paths } from './paths';
 type SemOrStr = SemVer | string;
 
 export interface Versions {
-  readonly obsoleteMajors: number[];
   readonly prereleaseMajors: number[];
   readonly supportedMajors: number[];
-  readonly versions: SemVer[];
+  readonly obsoleteMajors: number[];
+
   readonly latest: SemVer | undefined;
   readonly latestStable: SemVer | undefined;
+  readonly versions: SemVer[];
 
-  inBranch(major: number): SemVer[];
-  inRange(a: SemOrStr, b: SemOrStr): SemVer[];
+  // returns true iff this is a version we know about
   isVersion(version: SemOrStr): boolean;
+
+  // returns all the versions with that major number
+  inMajor(major: number): SemVer[];
+
+  // return all the versions in a range, inclusive
+  inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 }
 
 function releaseCompare(a: SemVer, b: SemVer) {
@@ -127,7 +133,7 @@ export class BaseVersions implements Versions {
     return this.map.has(typeof ver === 'string' ? ver : ver.version);
   }
 
-  public inBranch(major: number): SemVer[] {
+  public inMajor(major: number): SemVer[] {
     const versions: SemVer[] = [];
     for (const ver of this.map.values()) {
       if (ver.major === major) {
