@@ -74,9 +74,13 @@ export class Installer extends EventEmitter {
     // already downloaded...
     const str = `^electron-v(.*)-${process.platform}-${process.arch}.zip$`;
     const reg = new RegExp(str);
-    for (const file of fs.readdirSync(this.paths.electronDownloads)) {
-      const match = reg.exec(file);
-      if (match) this.setState(match[1], 'downloaded');
+    try {
+      for (const file of fs.readdirSync(this.paths.electronDownloads)) {
+        const match = reg.exec(file);
+        if (match) this.setState(match[1], 'downloaded');
+      }
+    } catch {
+      // no donwnload directory yet
     }
 
     // being downloaded now...
