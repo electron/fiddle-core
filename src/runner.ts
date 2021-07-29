@@ -1,4 +1,4 @@
-import * as child_process from 'child_process';
+import * as childproc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -8,20 +8,26 @@ import { SemVer } from 'semver';
 import { Writable } from 'stream';
 import { inspect } from 'util';
 
-import { Electron, execSubpath } from './electron';
+import { Installer } from './installer';
 import { ElectronVersions, Versions } from './versions';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
-export interface SpawnOptions extends child_process.SpawnOptions {
+export interface RunnerSpawnOptions {
   headless?: boolean;
   out?: Writable;
+  verbose?: boolean;
 }
 
-export interface SpawnSyncOptions extends child_process.SpawnSyncOptions {
-  headless?: boolean;
-  out?: Writable;
-}
+const defaultRunnerOpts: RunnerSpawnOptions = {
+  headless: false,
+  out: process.stdout,
+  verbose: true,
+};
+
+export type SpawnOptions = childproc.SpawnOptions & RunnerSpawnOptions;
+
+export type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerSpawnOptions;
 
 export interface TestResult {
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
@@ -36,7 +42,7 @@ export class Runner {
   private osInfo = '';
 
   private constructor(
-    private readonly electron: Electron,
+    private readonly installer: Installer,
     private readonly versions: Versions,
     private readonly fiddleFactory: FiddleFactory,
   ) {
@@ -44,23 +50,28 @@ export class Runner {
   }
 
   public static async create(opts: {
-    electron?: Electron;
+    installer?: Installer;
     fiddleFactory?: FiddleFactory;
     paths?: Partial<Paths>;
     versions?: Versions;
   }): Promise<Runner> {
     const paths = Object.freeze({ ...DefaultPaths, ...(opts.paths || {}) });
-    const electron = opts.electron || new Electron(paths);
+    const installer = opts.installer || new Installer(paths);
     const versions = opts.versions || (await ElectronVersions.create(paths));
     const factory = opts.fiddleFactory || new FiddleFactory(paths.fiddles);
-    return new Runner(electron, versions, factory);
+    return new Runner(installer, versions, factory);
   }
 
   private async getExec(val: string): Promise<string> {
-    if (fs.existsSync(val)) return val;
-    if (this.versions.isVersion(val)) return await this.electron.install(val);
-    const name = path.join(val, execSubpath());
-    if (fs.existsSync(name)) return name;
+    try {
+      const stat = fs.statSync(val);
+      if (!stat.isDirectory()) return val;
+      const name = Installer.getExecPath(val);
+      if (fs.existsSync(name)) return name;
+    } catch {
+      if (this.versions.isVersion(val))
+        return await this.installer.install(val);
+    }
     throw new Error(`Unrecognized electron name: "${val}"`);
   }
 
@@ -103,11 +114,11 @@ export class Runner {
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
     opts: SpawnOptions = {},
-  ): Promise<child_process.ChildProcess> {
+  ): Promise<childproc.ChildProcess> {
     const d = debug('fiddle-runner:Runner.spawn');
 
     // process the input parameters
-    opts = { out: process.stdout, headless: false, ...opts };
+    opts = { ...defaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
     const fiddle = await this.fiddleFactory.create(fiddleIn);
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
@@ -120,9 +131,9 @@ export class Runner {
 
     d(inspect({ exec, args, opts }));
 
-    const child = child_process.spawn(exec, args, opts);
+    const child = childproc.spawn(exec, args, opts);
 
-    if (child.stdout)
+    if (opts.verbose && child.stdout)
       child.stdout.push(this.spawnInfo(version, electronExec, fiddle));
 
     return child;
@@ -132,11 +143,11 @@ export class Runner {
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
     opts: SpawnSyncOptions = {},
-  ): Promise<child_process.SpawnSyncReturns<string>> {
+  ): Promise<childproc.SpawnSyncReturns<string>> {
     const d = debug('fiddle-runner:Runner.spawnSync');
 
     // process the input parameters
-    opts = { headless: false, out: process.stdout, ...opts };
+    opts = { ...defaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
     const fiddle = await this.fiddleFactory.create(fiddleIn);
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
@@ -148,17 +159,15 @@ export class Runner {
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
     d(inspect({ exec, args, opts }));
-    const result = child_process.spawnSync(exec, args, {
+    const result = childproc.spawnSync(exec, args, {
       ...opts,
       encoding: 'utf8',
     });
 
     if (opts.out) {
-      opts.out.write(
-        [this.spawnInfo(version, electronExec, fiddle), result.stdout].join(
-          '\n',
-        ),
-      );
+      if (opts.verbose)
+        opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
+      opts.out.write(result.stdout);
     }
 
     return result;

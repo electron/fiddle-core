@@ -45,7 +45,7 @@ Done in 28.19s.
 import { Runner } from 'electron-fiddle-runner';
 
 const runner = await Runner.create();
-const { status } = await runner.run(versionString, '/path/to/fiddle');
+const { status } = await runner.run('13.1.7', '/path/to/fiddle');
 console.log(status);
 ```
 
@@ -78,12 +78,12 @@ const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo)
 ### Managing Electron Installations
 
 ```ts
-import { Electron } from 'electron-fiddle-runner';
+import { Installer } from 'electron-fiddle-runner';
 
-const electron = new Electron();
-electron.on('downloaded', (version) => console.log(`Downloaded "${version}"`));
-electron.on('installed', (version) => console.log(`Installed "${version}"`));
-electron.on('removed', (version) => console.log(`Removed "${version}"`));
+const installer = new Installer();
+installer.on('state-changed', (version, state) => {
+  console.log(`Version "${version}" state changed: "${state}");
+});
 
 // download a version of electron
 await electron.ensureDownloaded('12.0.15');
@@ -91,10 +91,11 @@ await electron.ensureDownloaded('12.0.15');
 
 // remove a download
 await electron.remove('12.0.15');
-// expect(elecctron.state('12.0.15').toBe('not-downloaded');
+// expect(electron.state('12.0.15').toBe('not-downloaded');
 
 // install a specific version for the runner to use
 const exec = await electron.install('11.4.10');
+// expect(electron.state('11.4.10').toBe('installed');
 // expect(fs.accessSync(exec, fs.constants.X_OK)).toBe(true);
 ```
 

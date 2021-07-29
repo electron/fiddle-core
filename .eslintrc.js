@@ -17,8 +17,9 @@ const config = {
   },
   rules: {
     // a la carte warnings
-    'no-template-curly-in-string': 'error',
+    '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
+    'no-template-curly-in-string': 'error',
   }
 }
 

@@ -26,7 +26,7 @@ function getZipName(version: string): string {
 type ProgressObject = { percent: number };
 
 export type InstallState =
-  | 'not-downloaded'
+  | 'not_downloaded'
   | 'downloading'
   | 'downloaded'
   | 'installing'
@@ -35,9 +35,9 @@ export type InstallState =
 /**
  * Manage downloading and installation of Electron versions for use with Runner.
  */
-export class Electron extends EventEmitter {
+export class Installer extends EventEmitter {
   private readonly paths: Paths;
-  private readonly states = new Map<string, InstallState>();
+  private readonly stateMap = new Map<string, InstallState>();
 
   constructor(pathsIn: Partial<Paths> = {}) {
     super();
@@ -45,13 +45,17 @@ export class Electron extends EventEmitter {
     this.rebuildStates();
   }
 
+  public static getExecPath(folder: string): string {
+    return path.join(folder, execSubpath());
+  }
+
   private setState(version: string, state: InstallState) {
-    this.states.set(version, state);
-    this.emit(state, version);
+    this.stateMap.set(version, state);
+    this.emit('state-changed', version, state);
   }
 
   private rebuildStates() {
-    this.states.clear();
+    this.stateMap.clear();
 
     // currently installed...
     try {
@@ -83,17 +87,17 @@ export class Electron extends EventEmitter {
   public async remove(version: string): Promise<void> {
     const zip = path.join(this.paths.electronDownloads, getZipName(version));
     await fs.remove(zip);
-    this.states.delete(version);
-    this.emit('not-downloaded', version);
+    this.stateMap.delete(version);
+    this.emit('state-changed', version, 'not_downloaded');
   }
 
   public get installedVersion(): string | undefined {
-    for (const [version, state] of this.states)
+    for (const [version, state] of this.stateMap)
       if (state === 'installed') return version;
   }
 
   public isDownloaded(version: string): boolean {
-    const state = this.states.get(version);
+    const state = this.stateMap.get(version);
     return (
       state === 'downloaded' || state === 'installing' || state === 'installed'
     );
@@ -159,7 +163,7 @@ export class Electron extends EventEmitter {
   public async install(version: string): Promise<string> {
     const d = debug(`fiddle-runner:Electron:${version}:installImpl`);
     const { electronInstall } = this.paths;
-    const electronExec = path.join(electronInstall, execSubpath());
+    const electronExec = Installer.getExecPath(electronInstall);
 
     if (this.installing) throw new Error(`Currently installing "${version}"`);
     this.installing = version;
@@ -171,7 +175,16 @@ export class Electron extends EventEmitter {
       const zipFile = await this.ensureDownloaded(version);
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
-      await extract(zipFile, { dir: electronInstall });
+      // @ts-ignore: yes, I know noAsar isn't defined in process
+      const { noAsar } = process;
+      try {
+        // @ts-ignore: yes, I know noAsar isn't defined in process
+        process.noAsar = true;
+        await extract(zipFile, { dir: electronInstall });
+      } finally {
+        // @ts-ignore: yes, I know noAsar isn't defined in process
+        process.noAsar = noAsar; // eslint-disable-line
+      }
       this.setState(version, 'installed');
       this.emit('installed', version, electronExec);
     }
@@ -184,6 +197,10 @@ export class Electron extends EventEmitter {
   }
 
   public state(version: string): InstallState {
-    return this.states.get(version) || 'not-downloaded';
+    return this.stateMap.get(version) || 'not_downloaded';
+  }
+
+  public get states(): Map<string, InstallState> {
+    return new Map(this.stateMap.entries());
   }
 }

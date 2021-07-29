@@ -3,7 +3,6 @@ import * as path from 'path';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
-import { inspect } from 'util';
 
 import { DefaultPaths } from './paths';
 
@@ -18,6 +17,10 @@ export class Fiddle {
     public readonly mainPath: string, // /path/to/main.js
     public readonly source: string,
   ) {}
+
+  public remove(): Promise<void> {
+    return fs.remove(path.dirname(this.mainPath));
+  }
 }
 
 /**
@@ -70,16 +73,19 @@ export class FiddleFactory {
     const d = debug('fiddle-runner:FiddleFactory:fromMem');
     const map = new Map<string, string>(src);
 
-    // make a tmp copy of this fiddle
-    const hash = hashString([...map.keys()].join(','));
+    // make a name for the directory that will hold our temp copy of the fiddle
+    const md5sum = createHash('md5');
+    for (const content of map.values()) md5sum.update(content);
+    const hash = md5sum.digest('hex');
     const folder = path.join(this.fiddles, hash);
     d({ folder });
 
-    const promises: Promise<void>[] = [];
-    for (const [filename, content] of map.entries()) {
-      promises.push(fs.outputFile(filename, content, 'utf8'));
-    }
-    await Promise.all(promises);
+    // save content to that temp directory
+    await Promise.all(
+      [...map.entries()].map(([filename, content]) =>
+        fs.outputFile(path.join(folder, filename), content, 'utf8'),
+      ),
+    );
 
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }

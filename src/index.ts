@@ -1,5 +1,5 @@
 import { DefaultPaths, Paths } from './paths';
-import { Electron } from './electron';
+import { Installer, InstallState } from './installer';
 import { Fiddle, FiddleFactory } from './fiddle';
 import {
   BisectResult,
@@ -14,10 +14,11 @@ import { runFromCommandLine } from './command-line';
 export {
   BisectResult,
   DefaultPaths,
-  Electron,
+  Installer,
   ElectronVersions,
   Fiddle,
   FiddleFactory,
+  InstallState,
   Paths,
   Runner,
   SpawnOptions,
