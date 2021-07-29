@@ -1,3 +1,4 @@
+import * as Stream from 'stream';
 import * as childproc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -5,7 +6,6 @@ import * as path from 'path';
 import debug from 'debug';
 import getos from 'getos';
 import { SemVer } from 'semver';
-import { Writable } from 'stream';
 import { inspect } from 'util';
 
 import { Installer } from './installer';
@@ -15,7 +15,7 @@ import { DefaultPaths, Paths } from './paths';
 
 export interface RunnerSpawnOptions {
   headless?: boolean;
-  out?: Writable;
+  out?: Stream.Writable;
   verbose?: boolean;
 }
 
@@ -203,7 +203,7 @@ export class Runner {
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
-    out = process.stdout,
+    out: Stream.Writable = process.stdout,
   ): Promise<TestResult> {
     const result = await this.spawnSync(version, fiddle, { out });
     const { error, status } = result;
@@ -218,7 +218,7 @@ export class Runner {
     version_a: string | SemVer,
     version_b: string | SemVer,
     fiddleIn: FiddleSource,
-    out = process.stdout,
+    out: Stream.Writable = process.stdout,
   ): Promise<BisectResult> {
     const log = (first: unknown, ...rest: unknown[]) => {
       if (out) {
