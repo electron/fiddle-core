@@ -14,12 +14,14 @@ import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
 interface RunnerOptions {
+  args?: string[];
   headless?: boolean;
   out?: Stream.Writable;
   showConfig?: boolean;
 }
 
 const DefaultRunnerOpts: RunnerOptions = Object.freeze({
+  args: [],
   headless: false,
   out: process.stdout,
   showConfig: true,
@@ -126,7 +128,7 @@ export class Runner {
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
     let exec = electronExec;
-    let args = [fiddle.mainPath];
+    let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
     d(inspect({ exec, args, opts }));
@@ -155,7 +157,7 @@ export class Runner {
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
     let exec = electronExec;
-    let args = [fiddle.mainPath];
+    let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
     d(inspect({ exec, args, opts }));
