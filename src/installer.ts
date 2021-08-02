@@ -133,7 +133,7 @@ export class Installer extends EventEmitter {
     return zipFile;
   }
 
-  public async ensureDownloadedImpl(version: string): Promise<string> {
+  private async ensureDownloadedImpl(version: string): Promise<string> {
     const d = debug(`fiddle-runner:Electron:${version}:ensureDownloaded`);
 
     const zipFile = path.join(
