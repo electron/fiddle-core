@@ -10,7 +10,9 @@ describe('Installer', () => {
   let paths: Partial<Paths>;
   let nockScope: Scope;
   let installer: Installer;
-  const version = '13.1.7';
+  const version12 = '12.0.15' as const;
+  const version13 = '13.1.7' as const;
+  const version = version13;
 
   beforeEach(async () => {
     tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-runner-'));
@@ -29,6 +31,10 @@ describe('Installer', () => {
       // Live Electron versions are desirable for the Installer tests
       .get(/electron-v13.1.7-linux-x64\.zip$/)
       .replyWithFile(200, fixture('electron-v13.1.7-linux-x64.zip'), {
+        'Content-Type': 'application/zip',
+      })
+      .get(/electron-v12.0.15-linux-x64.zip$/)
+      .replyWithFile(200, fixture('electron-v12.0.15-linux-x64.zip'), {
         'Content-Type': 'application/zip',
       })
       .get(/SHASUMS256\.txt$/)
@@ -209,6 +215,20 @@ describe('Installer', () => {
       const { events } = await doInstall(installer, version);
       expect(events).toStrictEqual([]);
     });
+
+    it('replaces the previous installation', async () => {
+      await doInstall(installer, version12);
+
+      const { events } = await doInstall(installer, version13);
+
+      expect(events).toStrictEqual([
+        { version: version13, state: 'downloading' },
+        { version: version13, state: 'downloaded' },
+        { version: version13, state: 'installing' },
+        { version: version12, state: 'downloaded' },
+        { version: version13, state: 'installed' },
+      ]);
+    });
   });
 
   describe('installedVersion', () => {
@@ -224,10 +244,18 @@ describe('Installer', () => {
   });
 
   describe('state()', () => {
-    it.todo("returns 'installed' if the version is installed");
-    it.todo("returns 'installing' if the version is being installed");
-    it.todo("returns 'downloaded' if the version is downloaded");
-    it.todo("returns 'downloading' if the version is being downloaded");
-    it.todo("returns 'missing' if the version is not downloaded");
+    it("returns 'installed' if the version is installed", async () => {
+      await doInstall(installer, version);
+      expect(installer.state(version)).toBe('installed');
+    });
+
+    it("returns 'downloaded' if the version is downloaded", async () => {
+      await doDownload(installer, version);
+      expect(installer.state(version)).toBe('downloaded');
+    });
+
+    it("returns 'missing' if the version is not downloaded", () => {
+      expect(installer.state(version)).toBe('missing');
+    });
   });
 });

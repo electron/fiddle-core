@@ -10,6 +10,7 @@ de6fa35693d3baeae84981a9a387cc5587d6cd83a2b34d87b1a5503da64f685c *chromedriver-v
 11f91303e66df2414dafaf2ea42afe7d2cbe816e6c4ec92bc28467db5248ab14 *chromedriver-v13.1.7-win32-ia32.zip
 7aeabff153c2cc49091aba0a340a3e9cecc42281c3be925fda50511f94942d97 *chromedriver-v13.1.7-win32-x64.zip
 bdae269da37307136bdc21de1888da58145f54466f06ce67f93963c641b60420 *electron-api.json
+bd9e3c1bc2f36e7fcb735378a45478114a0bcd9b7236573d7d9cd66a9b781eba *electron-v12.0.15-linux-x64.zip
 b9864c5a4fef5cd398ef9d80794978b6de574104235928bf2ed17d859665be2e *electron-v13.1.7-darwin-arm64-dsym.zip
 77476b895f7ac11751842382fcd1714f66944fe89a973e2b3aa6690ad1a828d3 *electron-v13.1.7-darwin-arm64-symbols.zip
 95489cc66c5638d95cde80189a5ae3477ce09c6cfa4c421b1e8bceea94f4dfba *electron-v13.1.7-darwin-arm64.zip
