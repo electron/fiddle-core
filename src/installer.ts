@@ -21,6 +21,11 @@ export type InstallState =
   | 'installing'
   | 'installed';
 
+export interface InstallStateEvent {
+  version: string;
+  state: InstallState;
+}
+
 /**
  * Manage downloading and installation of Electron versions for use with Runner.
  */
@@ -66,8 +71,9 @@ export class Installer extends EventEmitter {
     const newState = this.state(version);
     d(inspect({ version, oldState, newState }));
     if (oldState !== newState) {
-      d('emitting state-changed', version, newState);
-      this.emit('state-changed', version, newState);
+      const event: InstallStateEvent = { version, state: newState };
+      d('emitting state-changed', inspect(event));
+      this.emit('state-changed', event);
     }
   }
 
@@ -151,7 +157,7 @@ export class Installer extends EventEmitter {
   }
 
   private async ensureDownloadedImpl(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Installer:${version}:ensureDownloaded`);
+    const d = debug(`fiddle-runner:Installer:${version}:ensureDownloadedImpl`);
 
     const zipFile = path.join(
       this.paths.electronDownloads,
@@ -189,7 +195,7 @@ export class Installer extends EventEmitter {
   private installing: string | undefined;
 
   public async install(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Installer:${version}:installImpl`);
+    const d = debug(`fiddle-runner:Installer:${version}:install`);
     const { electronInstall } = this.paths;
     const electronExec = Installer.getExecPath(electronInstall);
 
@@ -202,6 +208,7 @@ export class Installer extends EventEmitter {
       d(`already installed`);
     } else {
       const zipFile = await this.ensureDownloaded(version);
+      this.setState(version, 'installing');
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
       // @ts-ignore: yes, I know noAsar isn't defined in process

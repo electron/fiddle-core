@@ -1,5 +1,5 @@
 import { DefaultPaths, Paths } from './paths';
-import { Installer, InstallState } from './installer';
+import { Installer, InstallState, InstallStateEvent } from './installer';
 import { Fiddle, FiddleFactory } from './fiddle';
 import {
   BisectResult,
@@ -18,6 +18,7 @@ export {
   Fiddle,
   FiddleFactory,
   InstallState,
+  InstallStateEvent,
   Installer,
   Paths,
   Runner,

@@ -2,10 +2,8 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import nock, { Scope } from 'nock';
-import debug from 'debug';
-import { inspect } from 'util';
 
-import { Installer, InstallState, Paths } from '../src/index';
+import { InstallStateEvent, Installer, Paths } from '../src/index';
 
 describe('Installer', () => {
   let tmpdir: string;
@@ -43,6 +41,54 @@ describe('Installer', () => {
     fs.removeSync(tmpdir);
   });
 
+  // test helpers
+
+  async function listenWhile(
+    installer: Installer,
+    func: () => Promise<unknown>,
+  ) {
+    const events: InstallStateEvent[] = [];
+    const listener = (ev: InstallStateEvent) => events.push(ev);
+    const event = 'state-changed';
+    installer.on(event, listener);
+    const result = await func();
+    installer.removeListener(event, listener);
+    return { events, result };
+  }
+
+  async function doRemove(installer: Installer, version: string) {
+    const func = () => installer.remove(version);
+    const { events } = await listenWhile(installer, func);
+
+    expect(installer.state(version)).toBe('missing');
+
+    return { events };
+  }
+
+  async function doInstall(installer: Installer, version: string) {
+    const func = () => installer.install(version);
+    const { events, result } = await listenWhile(installer, func);
+    const exec = result as string;
+
+    expect(installer.state(version)).toBe('installed');
+    expect(installer.installedVersion).toBe(version);
+
+    return { events, exec };
+  }
+
+  async function doDownload(installer: Installer, version: string) {
+    const func = () => installer.ensureDownloaded(version);
+    const { events, result } = await listenWhile(installer, func);
+    const zipfile = result as string;
+
+    expect(fs.existsSync(zipfile)).toBe(true);
+    expect(installer.state(version)).toBe('downloaded');
+
+    return { events, zipfile };
+  }
+
+  // tests
+
   describe('getExecPath()', () => {
     it.each([
       ['Linux', 'linux', 'electron'],
@@ -61,18 +107,11 @@ describe('Installer', () => {
     it('downloads the version if needed', async () => {
       // setup: version is not installed
       const installer = new Installer(paths);
-      const states: Array<{ version: string; state: InstallState }> = [];
-      installer.on('state-changed', (version: string, state: InstallState) => {
-        states.push({ version, state });
-      });
       expect(installer.state(version)).toBe('missing');
-      expect(states).toStrictEqual([]);
 
       // test that the zipfile was downloaded
-      const zipfile = await installer.ensureDownloaded(version);
-      expect(installer.state(version)).toBe('downloaded');
-      expect(fs.existsSync(zipfile));
-      expect(states).toStrictEqual([
+      const { events } = await doDownload(installer, version);
+      expect(events).toStrictEqual([
         { version, state: 'downloading' },
         { version, state: 'downloaded' },
       ]);
@@ -81,23 +120,14 @@ describe('Installer', () => {
     it('does nothing if the version is already downloaded', async () => {
       // setup: version is already installed
       const installer = new Installer(paths);
-      const zipfile1 = await installer.ensureDownloaded(version);
-      expect(fs.existsSync(zipfile1));
-      expect(installer.state(version)).toBe('downloaded');
-      const { ctimeMs } = await fs.stat(zipfile1);
-      const states: Array<{ version: string; state: InstallState }> = [];
-      installer.on('state-changed', (version: string, state: InstallState) => {
-        states.push({ version, state });
-      });
+      const { zipfile: zip1 } = await doDownload(installer, version);
+      const { ctimeMs } = await fs.stat(zip1);
 
       // test that ensureDownloaded() did nothing:
-      const zipfile2 = await installer.ensureDownloaded(version);
-      // ...that the filename did not change
-      expect(zipfile2).toEqual(zipfile1);
-      // ...that the file's creation time did not change
-      expect((await fs.stat(zipfile2)).ctimeMs).toEqual(ctimeMs);
-      // ...that no events were fired
-      expect(states).toStrictEqual([]);
+      const { events, zipfile: zip2 } = await doDownload(installer, version);
+      expect(zip2).toEqual(zip1);
+      expect((await fs.stat(zip2)).ctimeMs).toEqual(ctimeMs);
+      expect(events).toStrictEqual([]);
     });
   });
 
@@ -105,8 +135,7 @@ describe('Installer', () => {
     it('returns false if the version is downloaded', async () => {
       // setup: version is downloaded
       const installer = new Installer(paths);
-      await installer.ensureDownloaded(version);
-      expect(installer.state(version)).toBe('downloaded');
+      await doDownload(installer, version);
 
       // test that isDownloaded() is true
       expect(installer.isDownloaded(version)).toBe(true);
@@ -124,58 +153,70 @@ describe('Installer', () => {
 
   describe('remove()', () => {
     it('removes a download', async () => {
-      const d = debug('fiddle-runner:tests:installer-test:removes-a-download');
-
       // setup: version is already installed
       const installer = new Installer(paths);
-      const zipfile = await installer.ensureDownloaded(version);
-      expect(fs.existsSync(zipfile)).toBe(true);
-      expect(installer.state(version)).toBe('downloaded');
-      const states: Array<{ version: string; state: InstallState }> = [];
-      installer.on('state-changed', (version: string, state: InstallState) => {
-        states.push({ version, state });
-      });
+      await doDownload(installer, version);
 
-      await installer.remove(version);
-      expect(installer.state(version)).toBe('missing');
-      expect(fs.existsSync(zipfile)).toBe(false);
-      expect(states).toStrictEqual([{ version, state: 'missing' }]);
+      const { events } = await doRemove(installer, version);
+      expect(events).toStrictEqual([{ version, state: 'missing' }]);
     });
 
     it('does nothing if the version is missing', async () => {
       // setup: version is not installed
       const installer = new Installer(paths);
       expect(installer.state(version)).toBe('missing');
-      const states: Array<{ version: string; state: InstallState }> = [];
-      installer.on('state-changed', (version: string, state: InstallState) => {
-        states.push({ version, state });
-      });
 
-      // test that calling remove() did nothing...
-      await installer.remove(version);
-      // ...that the state is still 'missing'
-      expect(installer.state(version)).toBe('missing');
-      // ...that no events were fired
-      expect(states).toStrictEqual([]);
+      const { events } = await doRemove(installer, version);
+      expect(events).toStrictEqual([]);
     });
 
     it('uninstalls the version if it is installed', async () => {
       // setup: version is installed
       const installer = new Installer(paths);
-      await installer.install(version);
-      expect(installer.state(version)).toBe('installed');
-      expect(installer.installedVersion).toBe(version);
+      await doInstall(installer, version);
 
-      await installer.remove(version);
-      expect(installer.state(version)).toBe('missing');
+      const { events } = await doRemove(installer, version);
+      expect(events).toStrictEqual([{ version, state: 'missing' }]);
       expect(installer.installedVersion).toBe(undefined);
     });
   });
 
   describe('install()', () => {
-    it.todo('downloads a version if necessary');
-    it.todo('unzips a version if necessary');
-    it.todo('does nothing if already installed');
+    it('downloads a version if necessary', async () => {
+      // setup: version is not downloaded
+      const installer = new Installer(paths);
+      expect(installer.state(version)).toBe('missing');
+      expect(installer.installedVersion).toBe(undefined);
+
+      const { events } = await doInstall(installer, version);
+      expect(events).toStrictEqual([
+        { version, state: 'downloading' },
+        { version, state: 'downloaded' },
+        { version, state: 'installing' },
+        { version, state: 'installed' },
+      ]);
+    });
+
+    it('unzips a version if necessary', async () => {
+      // setup: version is downloaded but not installed
+      const installer = new Installer(paths);
+      await doDownload(installer, version);
+      expect(installer.state(version)).toBe('downloaded');
+
+      const { events } = await doInstall(installer, version);
+      expect(events).toStrictEqual([
+        { version, state: 'installing' },
+        { version, state: 'installed' },
+      ]);
+    });
+
+    it('does nothing if already installed', async () => {
+      const installer = new Installer(paths);
+      await doInstall(installer, version);
+
+      const { events } = await doInstall(installer, version);
+      expect(events).toStrictEqual([]);
+    });
   });
 
   describe('installedVersion', () => {
