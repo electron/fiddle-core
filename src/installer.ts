@@ -26,7 +26,7 @@ function getZipName(version: string): string {
 type ProgressObject = { percent: number };
 
 export type InstallState =
-  | 'absent'
+  | 'missing'
   | 'downloading'
   | 'downloaded'
   | 'installing'
@@ -99,7 +99,7 @@ export class Installer extends EventEmitter {
       await fs.remove(this.paths.electronInstall);
 
     this.stateMap.delete(version);
-    this.emit('state-changed', version, 'absent');
+    this.emit('state-changed', version, 'missing');
   }
 
   public get installedVersion(): string | undefined {
@@ -211,6 +211,6 @@ export class Installer extends EventEmitter {
   }
 
   public state(version: string): InstallState {
-    return this.stateMap.get(version) || 'absent';
+    return this.stateMap.get(version) || 'missing';
   }
 }
