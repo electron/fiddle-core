@@ -2,9 +2,17 @@ import { Installer, Paths } from '../src/index';
 
 describe('Installer', () => {
   describe('getExecPath()', () => {
-    it.todo('returns the right path on Linux');
-    it.todo('returns the right path on Windows');
-    it.todo('returns the right path on macOS');
+    it.each([
+      ['Linux', 'linux', 'electron'],
+      ['Windows', 'win32', 'electron.exe'],
+      ['macOS', 'darwin', 'Electron.app/Contents/MacOS/Electron'],
+    ])(
+      'returns the right path on %s',
+      (_, platform: string, expected: string) => {
+        const subpath = Installer.execSubpath(platform);
+        expect(subpath).toBe(expected);
+      },
+    );
   });
 
   describe('remove()', () => {

@@ -17,5 +17,8 @@
     "lib",
     "jest.config.js"
   ],
-  "include": ["src/**/*ts"],
+  "include": [
+    "src/**/*ts",
+    "tests/**/*ts"
+  ],
 }

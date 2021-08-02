@@ -8,17 +8,6 @@ import { inspect } from 'util';
 
 import { DefaultPaths, Paths } from './paths';
 
-export function execSubpath(): string {
-  switch (process.platform) {
-    case 'darwin':
-      return 'Electron.app/Contents/MacOS/Electron';
-    case 'win32':
-      return 'electron.exe';
-    default:
-      return 'electron';
-  }
-}
-
 function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
@@ -45,8 +34,19 @@ export class Installer extends EventEmitter {
     this.rebuildStates();
   }
 
+  public static execSubpath(platform: string = process.platform): string {
+    switch (platform) {
+      case 'darwin':
+        return 'Electron.app/Contents/MacOS/Electron';
+      case 'win32':
+        return 'electron.exe';
+      default:
+        return 'electron';
+    }
+  }
+
   public static getExecPath(folder: string): string {
-    return path.join(folder, execSubpath());
+    return path.join(folder, Installer.execSubpath());
   }
 
   private setState(version: string, state: InstallState) {
