@@ -49,10 +49,26 @@ export class Installer extends EventEmitter {
     return path.join(folder, Installer.execSubpath());
   }
 
+  public state(version: string): InstallState {
+    return this.stateMap.get(version) || 'missing';
+  }
+
   private setState(version: string, state: InstallState) {
-    if (this.stateMap.get(version) === state) return;
-    this.stateMap.set(version, state);
-    this.emit('state-changed', version, state);
+    const d = debug('fiddle-runner:Installer:setState');
+    const oldState = this.state(version);
+
+    if (state === 'missing') {
+      this.stateMap.delete(version);
+    } else {
+      this.stateMap.set(version, state);
+    }
+
+    const newState = this.state(version);
+    d(inspect({ version, oldState, newState }));
+    if (oldState !== newState) {
+      d('emitting state-changed', version, newState);
+      this.emit('state-changed', version, newState);
+    }
   }
 
   private rebuildStates() {
@@ -90,6 +106,8 @@ export class Installer extends EventEmitter {
   }
 
   public async remove(version: string): Promise<void> {
+    const d = debug('fiddle-runner:Installer:remove');
+    d(version);
     // remove the zipfile
     const zip = path.join(this.paths.electronDownloads, getZipName(version));
     await fs.remove(zip);
@@ -98,8 +116,7 @@ export class Installer extends EventEmitter {
     if (this.installedVersion === version)
       await fs.remove(this.paths.electronInstall);
 
-    this.stateMap.delete(version);
-    this.emit('state-changed', version, 'missing');
+    this.setState(version, 'missing');
   }
 
   public get installedVersion(): string | undefined {
@@ -108,7 +125,7 @@ export class Installer extends EventEmitter {
   }
 
   public isDownloaded(version: string): boolean {
-    const state = this.stateMap.get(version);
+    const state = this.state(version);
     return (
       state === 'downloaded' || state === 'installing' || state === 'installed'
     );
@@ -134,7 +151,7 @@ export class Installer extends EventEmitter {
   }
 
   private async ensureDownloadedImpl(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Electron:${version}:ensureDownloaded`);
+    const d = debug(`fiddle-runner:Installer:${version}:ensureDownloaded`);
 
     const zipFile = path.join(
       this.paths.electronDownloads,
@@ -149,7 +166,6 @@ export class Installer extends EventEmitter {
       await fs.ensureDir(this.paths.electronDownloads);
       await fs.move(tempFile, zipFile);
       this.setState(version, 'downloaded');
-      this.emit('downloaded', version, zipFile);
       d(`"${zipFile}" downloaded`);
     }
 
@@ -173,7 +189,7 @@ export class Installer extends EventEmitter {
   private installing: string | undefined;
 
   public async install(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Electron:${version}:installImpl`);
+    const d = debug(`fiddle-runner:Installer:${version}:installImpl`);
     const { electronInstall } = this.paths;
     const electronExec = Installer.getExecPath(electronInstall);
 
@@ -198,9 +214,8 @@ export class Installer extends EventEmitter {
         // @ts-ignore: yes, I know noAsar isn't defined in process
         process.noAsar = noAsar; // eslint-disable-line
       }
-      this.setState(version, 'installed');
       if (installedVersion) this.setState(installedVersion, 'downloaded');
-      this.emit('installed', version, electronExec);
+      this.setState(version, 'installed');
     }
 
     delete this.installing;
@@ -208,9 +223,5 @@ export class Installer extends EventEmitter {
     // return the full path to the electron executable
     d(inspect({ electronExec, version }));
     return electronExec;
-  }
-
-  public state(version: string): InstallState {
-    return this.stateMap.get(version) || 'missing';
   }
 }
