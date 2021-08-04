@@ -14,9 +14,13 @@ import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
 interface RunnerOptions {
+  // extra arguments to be appended to the electron invocation
   args?: string[];
+  // if true, use xvfb-run on *nix
   headless?: boolean;
+  // where the test's output should be written
   out?: Stream.Writable;
+  // whether to show config info (e.g. platform os & arch) in the log
   showConfig?: boolean;
 }
 
@@ -64,19 +68,33 @@ export class Runner {
     return new Runner(installer, versions, factory);
   }
 
-  private async getExec(val: string): Promise<string> {
+  /**
+   * Figure out how to run the user-specified `electron` value.
+   *
+   * - if it's an existing directory, look for an execPath in it.
+   * - if it's an existing file, run it. It's a local build.
+   * - if it's a version number, delegate to the installer
+   *
+   * @param {string} val - a version number, directory, or executable
+   * @return {string} a path to an Electron executable
+   */
+  private async getExec(electron: string): Promise<string> {
     try {
-      const stat = fs.statSync(val);
-      if (!stat.isDirectory()) return val;
-      const name = Installer.getExecPath(val);
+      const stat = fs.statSync(electron);
+      // if it's on the filesystem but not a directory, use it directly
+      if (!stat.isDirectory()) return electron;
+      // if it's on the filesystem as a directory, look for execPath
+      const name = Installer.getExecPath(electron);
       if (fs.existsSync(name)) return name;
     } catch {
-      if (this.versions.isVersion(val))
-        return await this.installer.install(val);
+      // if it's a version, install it
+      if (this.versions.isVersion(electron))
+        return await this.installer.install(electron);
     }
-    throw new Error(`Unrecognized electron name: "${val}"`);
+    throw new Error(`Unrecognized electron name: "${electron}"`);
   }
 
+  // FIXME(anyone): minor wart, 'source' is incorrect here if it's a local build
   private spawnInfo = (version: string, exec: string, fiddle: Fiddle) =>
     [
       '',
@@ -101,6 +119,9 @@ export class Runner {
       '',
     ].join('\n');
 
+  /**
+   * If we're on *nix, try to run headless with xvfb-run
+   */
   private static headless(
     exec: string,
     args: string[],

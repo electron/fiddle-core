@@ -143,6 +143,7 @@ export class Installer extends EventEmitter {
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
         const emoji = pct >= 100 ? '🏁' : '⏳';
+        // FIXME(anyone): is there a better place than console.log for this?
         console.log(`${emoji} downloading ${version} - ${pct}%`);
         pctDone = pct;
       }
