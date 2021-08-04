@@ -11,9 +11,10 @@ const config = {
   ignorePatterns: ['.eslintrc.js', 'jest.config.js', '/coverage'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    ecmaVersion: 2020,
+    ecmaVersion: 'es2018',
+    lib: ['es2018'],
+    project: './tsconfig.eslint.json',
     sourceType: 'module',
-    project: 'tsconfig.json',
   },
   rules: {
     // a la carte warnings
