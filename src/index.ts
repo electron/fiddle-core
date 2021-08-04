@@ -8,10 +8,11 @@ import {
   SpawnSyncOptions,
   TestResult,
 } from './runner';
-import { ElectronVersions, Versions } from './versions';
+import { BaseVersions, ElectronVersions, Versions } from './versions';
 import { runFromCommandLine } from './command-line';
 
 export {
+  BaseVersions,
   BisectResult,
   DefaultPaths,
   ElectronVersions,
