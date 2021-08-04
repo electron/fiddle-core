@@ -28,7 +28,7 @@ export interface Versions {
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 }
 
-function releaseCompare(a: SemVer, b: SemVer) {
+export function compareVersions(a: SemVer, b: SemVer): number {
   const l = a.compareMain(b);
   if (l) return l;
   // Electron's approach is nightly -> other prerelease tags -> stable,
@@ -76,7 +76,7 @@ export class BaseVersions implements Versions {
 
     // insert them in sorted order
     const semvers = parsed.filter((sem) => Boolean(sem)) as SemVer[];
-    semvers.sort((a, b) => releaseCompare(a, b));
+    semvers.sort((a, b) => compareVersions(a, b));
     this.map = new Map(semvers.map((sem) => [sem.version, sem]));
   }
 

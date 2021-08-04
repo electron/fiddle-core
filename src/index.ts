@@ -8,7 +8,12 @@ import {
   SpawnSyncOptions,
   TestResult,
 } from './runner';
-import { BaseVersions, ElectronVersions, Versions } from './versions';
+import {
+  BaseVersions,
+  ElectronVersions,
+  Versions,
+  compareVersions,
+} from './versions';
 import { runFromCommandLine } from './command-line';
 
 export {
@@ -27,6 +32,7 @@ export {
   SpawnSyncOptions,
   TestResult,
   Versions,
+  compareVersions,
   runFromCommandLine,
 };
 
