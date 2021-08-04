@@ -228,13 +228,24 @@ export class Runner {
     fiddle: FiddleSource,
     opts: SpawnSyncOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
-    const result = await this.spawnSync(version, fiddle, opts);
-    const { error, status } = result;
+    const subprocess = await this.spawn(version, fiddle, opts);
 
-    if (error) return { status: 'system_error' };
-    if (status === 0) return { status: 'test_passed' };
-    if (status === 1) return { status: 'test_failed' };
-    return { status: 'test_error' };
+    return new Promise((resolve) => {
+      subprocess.on('error', () => {
+        resolve({ status: 'system_error' });
+      });
+
+      subprocess.on('exit', (code) => {
+        if (code === 0) {
+          resolve({ status: 'test_passed' });
+        }
+        if (code === 1) {
+          resolve({ status: 'test_failed' });
+        }
+
+        resolve({ status: 'test_error' });
+      });
+    });
   }
 
   public async bisect(
