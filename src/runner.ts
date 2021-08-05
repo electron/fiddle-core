@@ -232,18 +232,13 @@ export class Runner {
 
     return new Promise((resolve) => {
       subprocess.on('error', () => {
-        resolve({ status: 'system_error' });
+        return resolve({ status: 'system_error' });
       });
 
       subprocess.on('exit', (code) => {
-        if (code === 0) {
-          resolve({ status: 'test_passed' });
-        }
-        if (code === 1) {
-          resolve({ status: 'test_failed' });
-        }
-
-        resolve({ status: 'test_error' });
+        if (code === 0) return resolve({ status: 'test_passed' });
+        if (code === 1) return resolve({ status: 'test_failed' });
+        return resolve({ status: 'test_error' });
       });
     });
   }
