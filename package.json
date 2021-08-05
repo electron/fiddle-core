@@ -7,6 +7,7 @@
   "version": "0.0.1",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": ["lib/**/*"],
   "scripts": {
     "build": "tsc -b",
     "lint": "run-p lint:eslint lint:prettier",
