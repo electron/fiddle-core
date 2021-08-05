@@ -1,4 +1,4 @@
-# Electron-Fiddle-Runner
+# Fiddle-Core
 
 Run fiddles from anywhere, on any Electron release
 
