@@ -15,7 +15,7 @@ export interface Paths {
   readonly versionsCache: string;
 }
 
-const paths = envPaths('electron-fiddle-runner', { suffix: '' });
+const paths = envPaths('fiddle-core', { suffix: '' });
 
 export const DefaultPaths: Paths = {
   electronDownloads: path.join(paths.data, 'electron', 'zips'),

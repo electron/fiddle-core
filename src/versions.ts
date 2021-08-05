@@ -163,7 +163,7 @@ export class ElectronVersions extends BaseVersions {
   public static async create(
     paths: Partial<Paths> = {},
   ): Promise<ElectronVersions> {
-    const d = debug('fiddle-runner:ElectronVersions:create');
+    const d = debug('fiddle-core:ElectronVersions:create');
     const { versionsCache } = { ...DefaultPaths, ...paths };
     try {
       const st = await fs.stat(versionsCache);

@@ -138,7 +138,7 @@ export class Runner {
     fiddleIn: FiddleSource,
     opts: SpawnOptions = {},
   ): Promise<childproc.ChildProcess> {
-    const d = debug('fiddle-runner:Runner.spawn');
+    const d = debug('fiddle-core:Runner.spawn');
 
     // process the input parameters
     opts = { ...DefaultRunnerOpts, ...opts };
@@ -167,7 +167,7 @@ export class Runner {
     fiddleIn: FiddleSource,
     opts: SpawnSyncOptions = {},
   ): Promise<childproc.SpawnSyncReturns<string>> {
-    const d = debug('fiddle-runner:Runner.spawnSync');
+    const d = debug('fiddle-core:Runner.spawnSync');
 
     // process the input parameters
     opts = { ...DefaultRunnerOpts, ...opts };
