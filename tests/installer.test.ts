@@ -15,7 +15,7 @@ describe('Installer', () => {
   const version = version13;
 
   beforeEach(async () => {
-    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-runner-'));
+    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     paths = {
       electronDownloads: path.join(tmpdir, 'downloads'),
       electronInstall: path.join(tmpdir, 'install'),

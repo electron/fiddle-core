@@ -59,7 +59,7 @@ export class Installer extends EventEmitter {
   }
 
   private setState(version: string, state: InstallState) {
-    const d = debug('fiddle-runner:Installer:setState');
+    const d = debug('fiddle-core:Installer:setState');
     const oldState = this.state(version);
 
     if (state === 'missing') {
@@ -112,7 +112,7 @@ export class Installer extends EventEmitter {
   }
 
   public async remove(version: string): Promise<void> {
-    const d = debug('fiddle-runner:Installer:remove');
+    const d = debug('fiddle-core:Installer:remove');
     d(version);
     // remove the zipfile
     const zip = path.join(this.paths.electronDownloads, getZipName(version));
@@ -158,7 +158,7 @@ export class Installer extends EventEmitter {
   }
 
   private async ensureDownloadedImpl(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Installer:${version}:ensureDownloadedImpl`);
+    const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
 
     const zipFile = path.join(
       this.paths.electronDownloads,
@@ -196,7 +196,7 @@ export class Installer extends EventEmitter {
   private installing: string | undefined;
 
   public async install(version: string): Promise<string> {
-    const d = debug(`fiddle-runner:Installer:${version}:install`);
+    const d = debug(`fiddle-core:Installer:${version}:install`);
     const { electronInstall } = this.paths;
     const electronExec = Installer.getExecPath(electronInstall);
 

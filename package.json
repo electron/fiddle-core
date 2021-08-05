@@ -1,10 +1,10 @@
 {
   "private": true,
-  "repository": "https://github.com/ckerr/electron-fiddle-runner",
-  "homepage": "https://github.com/ckerr/electron-fiddle-runner#readme",
+  "repository": "https://github.com/electron/fiddle-core",
+  "homepage": "https://github.com/electron/fiddle-core#readme",
   "author": "Charles Kerr <charles@charleskerr.com>",
   "license": "MIT",
-  "name": "electron-fiddle-runner",
+  "name": "fiddle-core",
   "version": "0.0.1",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

@@ -10,7 +10,7 @@ describe('FiddleFactory', () => {
   let fiddleFactory: FiddleFactory;
 
   beforeEach(async () => {
-    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-runner-'));
+    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     fiddleDir = path.join(tmpdir, 'fiddles');
     fiddleFactory = new FiddleFactory(fiddleDir);
   });

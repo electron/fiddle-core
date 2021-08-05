@@ -6,7 +6,7 @@ import { Fiddle, FiddleFactory } from './fiddle';
 import { Runner } from './runner';
 
 export async function runFromCommandLine(argv: string[]): Promise<void> {
-  const d = debug('fiddle-runner:runFromCommandLine');
+  const d = debug('fiddle-core:runFromCommandLine');
 
   d(inspect({ argv }));
   const versions = await ElectronVersions.create();

@@ -39,7 +39,7 @@ export class FiddleFactory {
   }
 
   public async fromFolder(source: string): Promise<Fiddle> {
-    const d = debug('fiddle-runner:FiddleFactory:fromFolder');
+    const d = debug('fiddle-core:FiddleFactory:fromFolder');
 
     // make a tmp copy of this fiddle
     const folder = path.join(this.fiddles, hashString(source));
@@ -51,7 +51,7 @@ export class FiddleFactory {
   }
 
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
-    const d = debug('fiddle-runner:FiddleFactory:fromRepo');
+    const d = debug('fiddle-core:FiddleFactory:fromRepo');
     const folder = path.join(this.fiddles, hashString(url));
     d({ url, checkout, folder });
 
@@ -70,7 +70,7 @@ export class FiddleFactory {
   }
 
   public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
-    const d = debug('fiddle-runner:FiddleFactory:fromMem');
+    const d = debug('fiddle-core:FiddleFactory:fromEntries');
     const map = new Map<string, string>(src);
 
     // make a name for the directory that will hold our temp copy of the fiddle

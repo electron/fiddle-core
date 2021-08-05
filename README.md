@@ -1,22 +1,22 @@
-# Electron-Fiddle-Runner
+# Fiddle-Core
 
 Run fiddles from anywhere, on any Electron release
 
 ## CLI
 
 ```sh
-# electron-fiddle-runner run ver (gist | repo URL | folder)
-# electron-fiddle-runner test ver (gist | repo URL | folder)
-# electron-fiddle-runner bisect ver1 ver2 (gist | repo URL | folder)
+# fiddle-core run ver (gist | repo URL | folder)
+# fiddle-core test ver (gist | repo URL | folder)
+# fiddle-core bisect ver1 ver2 (gist | repo URL | folder)
 #
 # Examples:
 
-$ electron-fiddle-runner run 12.0.0 /path/to/fiddle
-$ electron-fiddle-runner test 12.0.0 642fa8daaebea6044c9079e3f8a46390
-$ electron-fiddle-runner bisect 8.0.0 13.0.0 https://github.com/my/testcase.git
+$ fiddle-core run 12.0.0 /path/to/fiddle
+$ fiddle-core test 12.0.0 642fa8daaebea6044c9079e3f8a46390
+$ fiddle-core bisect 8.0.0 13.0.0 https://github.com/my/testcase.git
 
 
-$ electron-fiddle-runner bisect 8.0.0 13.0.0 642fa8daaebea6044c9079e3f8a46390
+$ fiddle-core bisect 8.0.0 13.0.0 642fa8daaebea6044c9079e3f8a46390
 ...
 🏁 finished bisecting across 438 versions...
 # 219 🟢 passed 11.0.0-nightly.20200611 (test #1)
@@ -42,7 +42,7 @@ Done in 28.19s.
 ### Hello, World!
 
 ```ts
-import { Runner } from 'electron-fiddle-runner';
+import { Runner } from 'fiddle-core';
 
 const runner = await Runner.create();
 const { status } = await runner.run('13.1.7', '/path/to/fiddle');
@@ -52,7 +52,7 @@ console.log(status);
 ### Running Fiddles
 
 ```ts
-import { Runner } from 'electron-fiddle-runner';
+import { Runner } from 'fiddle-core';
 
 const runner = await Runner.create();
 
@@ -78,7 +78,7 @@ const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo)
 ### Managing Electron Installations
 
 ```ts
-import { Installer } from 'electron-fiddle-runner';
+import { Installer } from 'fiddle-core';
 
 const installer = new Installer();
 installer.on('state-changed', (version, state) => {
@@ -102,7 +102,7 @@ const exec = await electron.install('11.4.10');
 ### Versions
 
 ```ts
-import { Versions } from 'electron-fiddle-runner';
+import { Versions } from 'fiddle-core';
 
 // - querying specific versions
 const elves = await ElectronVersions.create();
@@ -140,7 +140,7 @@ range = releases.inMajor(10);
 ### child_process.Spawn
 
 ```ts
-import { Runner } from 'electron-fiddle-runner';
+import { Runner } from 'fiddle-core';
 
 // third argument is same as node.spawnSync()'s opts
 const result = await runner.spawnSync('12.0.0', fiddle, nodeSpawnSyncOpts);
@@ -154,7 +154,7 @@ const child = await runner.spawn('12.0.1', fiddle, nodeSpawnOpts);
 ### Using Local Builds
 
 ```ts
-import { Runner } from 'electron-fiddle-runner';
+import { Runner } from 'fiddle-core';
 
 const runner = await Runner.create();
 const result = await runner.run('/path/to/electron/build', fiddle);
@@ -163,7 +163,7 @@ const result = await runner.run('/path/to/electron/build', fiddle);
 ### Using Custom Paths
 
 ```ts
-import { Paths, Runner } from 'electron-fiddle-runner';
+import { Paths, Runner } from 'fiddle-core';
 
 const paths: Paths = {
   // where to store zipfiles of downloaded electron versions
@@ -188,7 +188,7 @@ Runner will do this work for you; but if you want finer-grained control
 over the lifecycle of your Fiddle objects, you can instantiate them yourself:
 
 ```ts
-import { FiddleFactory } from 'electron-fiddle-runner';
+import { FiddleFactory } from 'fiddle-core';
 
 const factory = new FiddleFactory();
 
