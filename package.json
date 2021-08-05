@@ -1,5 +1,4 @@
 {
-  "private": true,
   "repository": "https://github.com/electron/fiddle-core",
   "homepage": "https://github.com/electron/fiddle-core#readme",
   "author": "Charles Kerr <charles@charleskerr.com>",
