@@ -59,7 +59,7 @@ export class FiddleFactory {
     if (!fs.existsSync(folder)) {
       d(`cloning "${url}" into "${folder}"`);
       const git = simpleGit();
-      await git.clone(url, folder);
+      await git.clone(url, folder, { '--depth': 1 });
     }
 
     const git = simpleGit(folder);
