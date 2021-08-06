@@ -127,7 +127,8 @@ export class Runner {
     args: string[],
   ): { exec: string; args: string[] } {
     if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      args.unshift(exec);
+      // try to get a free server number
+      args.unshift('--auto-servernum', exec);
       exec = 'xvfb-run';
     }
     return { exec, args };
@@ -152,12 +153,17 @@ export class Runner {
     let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
+    if (opts.out && opts.showConfig) {
+      opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
+    }
+
     d(inspect({ exec, args, opts }));
 
     const child = childproc.spawn(exec, args, opts);
-
-    if (opts.showConfig && child.stdout)
-      child.stdout.push(this.spawnInfo(version, electronExec, fiddle));
+    if (opts.out) {
+      child.stdout?.pipe(opts.out);
+      child.stderr?.pipe(opts.out);
+    }
 
     return child;
   }
