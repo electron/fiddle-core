@@ -127,7 +127,8 @@ export class Runner {
     args: string[],
   ): { exec: string; args: string[] } {
     if (process.platform !== 'darwin' && process.platform !== 'win32') {
-      args.unshift(exec);
+      // try to get a free server number
+      args.unshift('--auto-servernum', exec);
       exec = 'xvfb-run';
     }
     return { exec, args };
@@ -163,9 +164,6 @@ export class Runner {
       child.stdout?.pipe(opts.out);
       child.stderr?.pipe(opts.out);
     }
-
-    if (opts.showConfig && child.stdout)
-      child.stdout.push(this.spawnInfo(version, electronExec, fiddle));
 
     return child;
   }
