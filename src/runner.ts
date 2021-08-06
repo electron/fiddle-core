@@ -152,9 +152,17 @@ export class Runner {
     let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
+    if (opts.out && opts.showConfig) {
+      opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
+    }
+
     d(inspect({ exec, args, opts }));
 
     const child = childproc.spawn(exec, args, opts);
+    if (opts.out) {
+      child.stdout?.pipe(opts.out);
+      child.stderr?.pipe(opts.out);
+    }
 
     if (opts.showConfig && child.stdout)
       child.stdout.push(this.spawnInfo(version, electronExec, fiddle));

@@ -53,14 +53,18 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
   }
 
   if (cmd === 'test' && versionArgs.length === 1) {
-    const result = await runner.run(versionArgs[0], fiddle);
+    const result = await runner.run(versionArgs[0], fiddle, {
+      out: process.stdout,
+    });
     const vals = ['test_passed', 'test_failed', 'test_error', 'system_error'];
     process.exitCode = vals.indexOf(result.status);
     return;
   }
 
   if (cmd === 'bisect' && versionArgs.length === 2) {
-    const result = await runner.bisect(versionArgs[0], versionArgs[1], fiddle);
+    const result = await runner.bisect(versionArgs[0], versionArgs[1], fiddle, {
+      out: process.stdout,
+    });
     const vals = ['bisect_succeeded', 'test_error', 'system_error'];
     process.exitCode = vals.indexOf(result.status);
     return;
