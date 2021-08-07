@@ -1,5 +1,12 @@
-import * as Stream from 'stream';
-import * as childproc from 'child_process';
+import { Writable } from 'stream';
+import {
+  ChildProcess,
+  SpawnOptions,
+  SpawnSyncOptions,
+  SpawnSyncReturns,
+  spawn,
+  spawnSync,
+} from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -13,13 +20,13 @@ import { ElectronVersions, Versions } from './versions';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
-interface RunnerOptions {
+export interface RunnerOptions {
   // extra arguments to be appended to the electron invocation
   args?: string[];
   // if true, use xvfb-run on *nix
   headless?: boolean;
   // where the test's output should be written
-  out?: Stream.Writable;
+  out?: Writable;
   // whether to show config info (e.g. platform os & arch) in the log
   showConfig?: boolean;
 }
@@ -31,9 +38,9 @@ const DefaultRunnerOpts: RunnerOptions = Object.freeze({
   showConfig: true,
 });
 
-export type SpawnOptions = childproc.SpawnOptions & RunnerOptions;
+export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
-export type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerOptions;
+export type RunnerSpawnSyncOptions = SpawnSyncOptions & RunnerOptions;
 
 export interface TestResult {
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
@@ -75,8 +82,8 @@ export class Runner {
    * - if it's an existing file, run it. It's a local build.
    * - if it's a version number, delegate to the installer
    *
-   * @param {string} val - a version number, directory, or executable
-   * @return {string} a path to an Electron executable
+   * @param val - a version number, directory, or executable
+   * @returns a path to an Electron executable
    */
   private async getExec(electron: string): Promise<string> {
     try {
@@ -119,9 +126,7 @@ export class Runner {
       '',
     ].join('\n');
 
-  /**
-   * If we're on *nix, try to run headless with xvfb-run
-   */
+  /** If headless specified on  *nix, try to run with xvfb-run */
   private static headless(
     exec: string,
     args: string[],
@@ -137,8 +142,8 @@ export class Runner {
   public async spawn(
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
-    opts: SpawnOptions = {},
-  ): Promise<childproc.ChildProcess> {
+    opts: RunnerSpawnOptions = {},
+  ): Promise<ChildProcess> {
     const d = debug('fiddle-core:Runner.spawn');
 
     // process the input parameters
@@ -159,7 +164,7 @@ export class Runner {
 
     d(inspect({ exec, args, opts }));
 
-    const child = childproc.spawn(exec, args, opts);
+    const child = spawn(exec, args, opts);
     if (opts.out) {
       child.stdout?.pipe(opts.out);
       child.stderr?.pipe(opts.out);
@@ -171,8 +176,8 @@ export class Runner {
   public async spawnSync(
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
-    opts: SpawnSyncOptions = {},
-  ): Promise<childproc.SpawnSyncReturns<string>> {
+    opts: RunnerSpawnSyncOptions = {},
+  ): Promise<SpawnSyncReturns<string>> {
     const d = debug('fiddle-core:Runner.spawnSync');
 
     // process the input parameters
@@ -188,7 +193,7 @@ export class Runner {
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
     d(inspect({ exec, args, opts }));
-    const result = childproc.spawnSync(exec, args, {
+    const result = spawnSync(exec, args, {
       ...opts,
       encoding: 'utf8',
     });
@@ -232,7 +237,7 @@ export class Runner {
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
-    opts: SpawnSyncOptions = DefaultRunnerOpts,
+    opts: RunnerSpawnSyncOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
     const subprocess = await this.spawn(version, fiddle, opts);
 
@@ -253,7 +258,7 @@ export class Runner {
     version_a: string | SemVer,
     version_b: string | SemVer,
     fiddleIn: FiddleSource,
-    opts: SpawnSyncOptions = DefaultRunnerOpts,
+    opts: RunnerSpawnSyncOptions = DefaultRunnerOpts,
   ): Promise<BisectResult> {
     const { out } = opts;
     const log = (first: unknown, ...rest: unknown[]) => {

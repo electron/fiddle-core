@@ -137,24 +137,6 @@ describe('Installer', () => {
     });
   });
 
-  describe('isDownloaded()', () => {
-    it('returns false if the version is downloaded', async () => {
-      // setup: version is downloaded
-      await doDownload(installer, version);
-
-      // test that isDownloaded() is true
-      expect(installer.isDownloaded(version)).toBe(true);
-    });
-
-    it('returns true if the version is not downloaded', () => {
-      // setup: version is not installed
-      expect(installer.state(version)).toBe('missing');
-
-      // test that isDownloaded() is false
-      expect(installer.isDownloaded(version)).toBe(false);
-    });
-  });
-
   describe('remove()', () => {
     it('removes a download', async () => {
       // setup: version is already installed

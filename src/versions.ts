@@ -1,30 +1,46 @@
 import * as fs from 'fs-extra';
-import * as semver from 'semver';
+import { parse as semverParse, SemVer } from 'semver';
 import debug from 'debug';
 import fetch from 'node-fetch';
 
-type SemVer = semver.SemVer;
+export { SemVer };
 
 import { DefaultPaths, Paths } from './paths';
 
-type SemOrStr = SemVer | string;
+export type SemOrStr = SemVer | string;
 
+/**
+ * Interface for an object that manages a list of Electron releases.
+ *
+ * See {@link BaseVersions} for testing situations.
+ * See {@link ElectronVersions} for production.
+ */
 export interface Versions {
+  /** Semver-Major numbers of branches that only have prereleases */
   readonly prereleaseMajors: number[];
+
+  /** Semver-Major numbers of branches that have supported stable releases */
   readonly supportedMajors: number[];
+
+  /** Semver-Major numbers of branches that are no longer supported */
   readonly obsoleteMajors: number[];
 
+  /** The latest release (by version, not by date) */
   readonly latest: SemVer | undefined;
+
+  /** The latest stable (by version, not by date) */
   readonly latestStable: SemVer | undefined;
+
+  /** Full list of all known Electron releases, Sorted in branch order. */
   readonly versions: SemVer[];
 
-  // returns true iff this is a version we know about
+  /** @returns true iff `version` is a release that this object knows about */
   isVersion(version: SemOrStr): boolean;
 
-  // returns all the versions with that major number
+  /** @returns all versions matching that major number. Sorted in branch order. */
   inMajor(major: number): SemVer[];
 
-  // return all the versions in a range, inclusive
+  /** @returns all versions in a range, inclusive. Sorted in branch order. */
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 }
 
@@ -61,6 +77,14 @@ function isArrayOfStrings(val: unknown): val is Array<string> {
 
 const NUM_SUPPORTED_MAJORS = 4;
 
+/**
+ * Implementation of {@link Versions} that does everything except self-populate.
+ * It needs to be fed version info in its constructor.
+ *
+ * In production, use subclass '{@link ElectronVersions}'. This base class is
+ * useful in testing because it's an easy way to inject fake test data into a
+ * real Versions object.
+ */
 export class BaseVersions implements Versions {
   private readonly map = new Map<string, SemVer>();
 
@@ -69,9 +93,9 @@ export class BaseVersions implements Versions {
     let parsed: Array<SemVer | null> = [];
 
     if (isArrayOfVersionObjects(val)) {
-      parsed = val.map(({ version }) => semver.parse(version));
+      parsed = val.map(({ version }) => semverParse(version));
     } else if (isArrayOfStrings(val)) {
-      parsed = val.map((version) => semver.parse(version));
+      parsed = val.map((version) => semverParse(version));
     }
 
     // insert them in sorted order
@@ -155,6 +179,12 @@ export class BaseVersions implements Versions {
   }
 }
 
+/**
+ * Implementation of Versions that self-populates from release information at
+ * https://releases.electronjs.org/releases.json .
+ *
+ * This is generally what to use in production.
+ */
 export class ElectronVersions extends BaseVersions {
   private constructor(values: unknown) {
     super(values);
