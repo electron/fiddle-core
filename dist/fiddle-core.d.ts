@@ -80,8 +80,9 @@ export declare type FiddleSource = Fiddle | string | Iterable<[string, string]>;
  * An Electron release's .zip is downloaded into `paths.electronDownloads`,
  * which holds all the downloaded zips.
  *
- * Only a sigle version is installed at a time, in `paths.electronInstall`.
- * This holds the extracted contents of a zip from `paths.electronDownloads`.
+ * The installed version is unzipped into `paths.electronInstall`. Only one
+ * version is installed at a time -- installing a new version overwrites the
+ * current one in `paths.electronInstall`.
  *
  * See {@link DefaultPaths} for the default paths.
  */
@@ -201,11 +202,11 @@ export declare interface Versions {
     readonly latestStable: SemVer | undefined;
     /** Full list of all known Electron releases, Sorted in branch order. */
     readonly versions: SemVer[];
-    /** Return true iff `version` is a release that this object knows about */
+    /** @returns true iff `version` is a release that this object knows about */
     isVersion(version: SemOrStr): boolean;
-    /** Return all versions matching that major number. Sorted in branch order. */
+    /** @returns all versions matching that major number. Sorted in branch order. */
     inMajor(major: number): SemVer[];
-    /** Return all versions in a range, inclusive. Sorted in branch order. */
+    /** @returns all versions in a range, inclusive. Sorted in branch order. */
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 }
 
