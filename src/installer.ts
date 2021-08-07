@@ -14,6 +14,11 @@ function getZipName(version: string): string {
 
 type ProgressObject = { percent: number };
 
+/**
+ * The state of a current Electron version.
+ * See {@link Installer.state} to get this value.
+ * See Installer.on('state-changed') to watch for state changes.
+ */
 export type InstallState =
   | 'missing'
   | 'downloading'
@@ -27,7 +32,16 @@ export interface InstallStateEvent {
 }
 
 /**
- * Manage downloading and installation of Electron versions for use with Runner.
+ * Manage downloading and installing Electron versions.
+ *
+ * An Electron release's .zip is downloaded into `paths.electronDownloads`,
+ * which holds all the downloaded zips.
+ *
+ * The installed version is unzipped into `paths.electronInstall`. Only one 
+ * version is installed at a time -- installing a new version overwrites the
+ * current one in `paths.electronInstall`.
+ *
+ * See {@link DefaultPaths} for the default paths.
  */
 export class Installer extends EventEmitter {
   private readonly paths: Paths;
@@ -111,6 +125,7 @@ export class Installer extends EventEmitter {
     }
   }
 
+  /** Removes an Electron download or Electron install from the disk. */
   public async remove(version: string): Promise<void> {
     const d = debug('fiddle-core:Installer:remove');
     d(version);
@@ -125,16 +140,10 @@ export class Installer extends EventEmitter {
     this.setState(version, 'missing');
   }
 
+  /** The current Electron installation, if any. */
   public get installedVersion(): string | undefined {
     for (const [version, state] of this.stateMap)
       if (state === 'installed') return version;
-  }
-
-  public isDownloaded(version: string): boolean {
-    const state = this.state(version);
-    return (
-      state === 'downloaded' || state === 'installing' || state === 'installed'
-    );
   }
 
   private async download(version: string): Promise<string> {
@@ -159,26 +168,26 @@ export class Installer extends EventEmitter {
 
   private async ensureDownloadedImpl(version: string): Promise<string> {
     const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
+    const { electronDownloads } = this.paths;
+    const zipFile = path.join(electronDownloads, getZipName(version));
 
-    const zipFile = path.join(
-      this.paths.electronDownloads,
-      getZipName(version),
-    );
-    if (this.isDownloaded(version)) {
-      d(`"${zipFile}" exists; no need to download`);
-    } else {
-      this.setState(version, 'downloading');
+    const state = this.state(version);
+    if (state === 'missing') {
       d(`"${zipFile}" does not exist; downloading now`);
+      this.setState(version, 'downloading');
       const tempFile = await this.download(version);
-      await fs.ensureDir(this.paths.electronDownloads);
+      await fs.ensureDir(electronDownloads);
       await fs.move(tempFile, zipFile);
       this.setState(version, 'downloaded');
       d(`"${zipFile}" downloaded`);
+    } else {
+      d(`"${zipFile}" exists; no need to download`);
     }
 
     return zipFile;
   }
 
+  /** map of version string to currently-running active Promise */
   private downloading = new Map<string, Promise<string>>();
 
   public async ensureDownloaded(version: string): Promise<string> {
@@ -193,6 +202,7 @@ export class Installer extends EventEmitter {
     return promise;
   }
 
+  /** the currently-installing version, if any */
   private installing: string | undefined;
 
   public async install(version: string): Promise<string> {
@@ -212,6 +222,7 @@ export class Installer extends EventEmitter {
       this.setState(version, 'installing');
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
+      // FIXME(anyone) is there a less awful way to wrangle asar
       // @ts-ignore: yes, I know noAsar isn't defined in process
       const { noAsar } = process;
       try {

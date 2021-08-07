@@ -1,4 +1,4 @@
-import * as Stream from 'stream';
+import { Writable } from 'stream';
 import * as childproc from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -13,13 +13,13 @@ import { ElectronVersions, Versions } from './versions';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { DefaultPaths, Paths } from './paths';
 
-interface RunnerOptions {
+export interface RunnerOptions {
   // extra arguments to be appended to the electron invocation
   args?: string[];
   // if true, use xvfb-run on *nix
   headless?: boolean;
   // where the test's output should be written
-  out?: Stream.Writable;
+  out?: Writable;
   // whether to show config info (e.g. platform os & arch) in the log
   showConfig?: boolean;
 }
@@ -75,8 +75,8 @@ export class Runner {
    * - if it's an existing file, run it. It's a local build.
    * - if it's a version number, delegate to the installer
    *
-   * @param {string} val - a version number, directory, or executable
-   * @return {string} a path to an Electron executable
+   * @param val - a version number, directory, or executable
+   * @returns a path to an Electron executable
    */
   private async getExec(electron: string): Promise<string> {
     try {
@@ -119,9 +119,7 @@ export class Runner {
       '',
     ].join('\n');
 
-  /**
-   * If we're on *nix, try to run headless with xvfb-run
-   */
+  /** If headless specified on  *nix, try to run with xvfb-run */
   private static headless(
     exec: string,
     args: string[],

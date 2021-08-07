@@ -1,3 +1,5 @@
 coverage/
+dist/tsdoc-metadata.json
 lib/
 node_modules/
+temp/

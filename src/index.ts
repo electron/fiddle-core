@@ -1,9 +1,10 @@
 import { DefaultPaths, Paths } from './paths';
 import { Installer, InstallState, InstallStateEvent } from './installer';
-import { Fiddle, FiddleFactory } from './fiddle';
+import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import {
   BisectResult,
   Runner,
+  RunnerOptions,
   SpawnOptions,
   SpawnSyncOptions,
   TestResult,
@@ -11,6 +12,8 @@ import {
 import {
   BaseVersions,
   ElectronVersions,
+  SemOrStr,
+  SemVer,
   Versions,
   compareVersions,
 } from './versions';
@@ -23,11 +26,15 @@ export {
   ElectronVersions,
   Fiddle,
   FiddleFactory,
+  FiddleSource,
   InstallState,
   InstallStateEvent,
   Installer,
   Paths,
   Runner,
+  RunnerOptions,
+  SemOrStr,
+  SemVer,
   SpawnOptions,
   SpawnSyncOptions,
   TestResult,

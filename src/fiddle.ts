@@ -24,7 +24,7 @@ export class Fiddle {
 }
 
 /**
- * - Iterable<string, string> - filename-to-content key/value pairs
+ * - Iterable of [string, string] - filename-to-content key/value pairs
  * - string of form '/path/to/fiddle' - a fiddle on the filesystem
  * - string of form 'https://github.com/my/repo.git' - a git repo fiddle
  * - string of form '642fa8daaebea6044c9079e3f8a46390' - a github gist fiddle
