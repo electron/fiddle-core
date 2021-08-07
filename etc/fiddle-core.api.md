@@ -6,9 +6,12 @@
 
 /// <reference types="node" />
 
-import * as childproc from 'child_process';
+import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { SemVer } from 'semver';
+import { SpawnOptions } from 'child_process';
+import { SpawnSyncOptions } from 'child_process';
+import { SpawnSyncReturns } from 'child_process';
 import { Writable } from 'stream';
 
 // @public
@@ -132,7 +135,7 @@ export function runFromCommandLine(argv: string[]): Promise<void>;
 // @public (undocumented)
 export class Runner {
     // (undocumented)
-    bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnSyncOptions): Promise<BisectResult>;
+    bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<BisectResult>;
     // (undocumented)
     static create(opts: {
         installer?: Installer;
@@ -145,11 +148,11 @@ export class Runner {
     // (undocumented)
     static displayResult(result: TestResult): string;
     // (undocumented)
-    run(version: string | SemVer, fiddle: FiddleSource, opts?: SpawnSyncOptions): Promise<TestResult>;
+    run(version: string | SemVer, fiddle: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<TestResult>;
     // (undocumented)
-    spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnOptions): Promise<childproc.ChildProcess>;
+    spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<ChildProcess>;
     // (undocumented)
-    spawnSync(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnSyncOptions): Promise<childproc.SpawnSyncReturns<string>>;
+    spawnSync(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<SpawnSyncReturns<string>>;
 }
 
 // @public (undocumented)
@@ -165,15 +168,15 @@ export interface RunnerOptions {
 }
 
 // @public (undocumented)
+export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
+
+// @public (undocumented)
+export type RunnerSpawnSyncOptions = SpawnSyncOptions & RunnerOptions;
+
+// @public (undocumented)
 export type SemOrStr = SemVer | string;
 
 export { SemVer }
-
-// @public (undocumented)
-export type SpawnOptions = childproc.SpawnOptions & RunnerOptions;
-
-// @public (undocumented)
-export type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerOptions;
 
 // @public (undocumented)
 export interface TestResult {

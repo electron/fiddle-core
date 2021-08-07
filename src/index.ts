@@ -5,8 +5,8 @@ import {
   BisectResult,
   Runner,
   RunnerOptions,
-  SpawnOptions,
-  SpawnSyncOptions,
+  RunnerSpawnOptions,
+  RunnerSpawnSyncOptions,
   TestResult,
 } from './runner';
 import {
@@ -33,10 +33,10 @@ export {
   Paths,
   Runner,
   RunnerOptions,
+  RunnerSpawnOptions,
+  RunnerSpawnSyncOptions,
   SemOrStr,
   SemVer,
-  SpawnOptions,
-  SpawnSyncOptions,
   TestResult,
   Versions,
   compareVersions,

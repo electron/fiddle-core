@@ -37,7 +37,7 @@ export interface InstallStateEvent {
  * An Electron release's .zip is downloaded into `paths.electronDownloads`,
  * which holds all the downloaded zips.
  *
- * The installed version is unzipped into `paths.electronInstall`. Only one 
+ * The installed version is unzipped into `paths.electronInstall`. Only one
  * version is installed at a time -- installing a new version overwrites the
  * current one in `paths.electronInstall`.
  *

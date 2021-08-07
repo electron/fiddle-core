@@ -1,8 +1,11 @@
 /// <reference types="node" />
 
-import * as childproc from 'child_process';
+import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { SemVer } from 'semver';
+import { SpawnOptions } from 'child_process';
+import { SpawnSyncOptions } from 'child_process';
+import { SpawnSyncReturns } from 'child_process';
 import { Writable } from 'stream';
 
 /**
@@ -156,12 +159,12 @@ export declare class Runner {
     private spawnInfo;
     /** If headless specified on  *nix, try to run with xvfb-run */
     private static headless;
-    spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnOptions): Promise<childproc.ChildProcess>;
-    spawnSync(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnSyncOptions): Promise<childproc.SpawnSyncReturns<string>>;
+    spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<ChildProcess>;
+    spawnSync(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<SpawnSyncReturns<string>>;
     static displayEmoji(result: TestResult): string;
     static displayResult(result: TestResult): string;
-    run(version: string | SemVer, fiddle: FiddleSource, opts?: SpawnSyncOptions): Promise<TestResult>;
-    bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: SpawnSyncOptions): Promise<BisectResult>;
+    run(version: string | SemVer, fiddle: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<TestResult>;
+    bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnSyncOptions): Promise<BisectResult>;
 }
 
 export declare interface RunnerOptions {
@@ -171,13 +174,13 @@ export declare interface RunnerOptions {
     showConfig?: boolean;
 }
 
+export declare type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
+
+export declare type RunnerSpawnSyncOptions = SpawnSyncOptions & RunnerOptions;
+
 export declare type SemOrStr = SemVer | string;
 
 export { SemVer }
-
-export declare type SpawnOptions = childproc.SpawnOptions & RunnerOptions;
-
-export declare type SpawnSyncOptions = childproc.SpawnSyncOptions & RunnerOptions;
 
 export declare interface TestResult {
     status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';

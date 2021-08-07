@@ -7,7 +7,9 @@
   "version": "0.0.2",
   "main": "lib/index.js",
   "types": "dist/fiddle-core.d.ts",
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "build": "tsc -b",
     "docs": "api-extractor run --local",
