@@ -1,4 +1,4 @@
-/* eslint @typescript-eslint/no-unsafe-assignment:1 */
+/* eslint @typescript-eslint/no-unsafe-assignment:0 */
 
 import { Runner } from '../src/index';
 import child_process from 'child_process';
@@ -19,6 +19,33 @@ const mockSubprocess = {
   },
 };
 
+interface FakeRunnerOpts {
+  pathToExecutable?: string;
+  generatedFiddle?: {
+    source: string;
+    mainPath: string;
+  } | null;
+}
+
+async function createFakeRunner({
+  pathToExecutable = '/path/to/electron/executable',
+  generatedFiddle = {
+    source: 'https://gist.github.com/642fa8daaebea6044c9079e3f8a46390.git',
+    mainPath: '/path/to/fiddle/',
+  },
+}: FakeRunnerOpts) {
+  const runner = await Runner.create({
+    installer: {
+      install: jest.fn().mockResolvedValue(pathToExecutable),
+    } as any,
+    fiddleFactory: {
+      create: jest.fn().mockResolvedValue(generatedFiddle),
+    } as any,
+  });
+
+  return runner;
+}
+
 describe('Runner', () => {
   describe('create()', () => {
     it('creates a Runner object with the expected properties', async () => {
@@ -35,18 +62,8 @@ describe('Runner', () => {
 
   describe('spawn()', () => {
     it('spawns a subprocess and prints debug information to stdout', async () => {
-      const runner = await Runner.create({
-        installer: {
-          install: jest.fn().mockResolvedValue('/path/to/electron/executable'),
-        } as any,
-        fiddleFactory: {
-          create: jest.fn().mockResolvedValue({
-            source:
-              'https://gist.github.com/642fa8daaebea6044c9079e3f8a46390.git',
-            mainPath: '/path/to/fiddle/',
-          }),
-        } as any,
-      });
+      const runner = await createFakeRunner({});
+
       (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
 
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
@@ -78,20 +95,7 @@ describe('Runner', () => {
     (process.platform === 'linux' ? it : it.skip)(
       'can spawn a subprocess in headless mode on Linux',
       async function () {
-        const runner = await Runner.create({
-          installer: {
-            install: jest
-              .fn()
-              .mockResolvedValue('/path/to/electron/executable'),
-          } as any,
-          fiddleFactory: {
-            create: jest.fn().mockResolvedValue({
-              source:
-                'https://gist.github.com/642fa8daaebea6044c9079e3f8a46390.git',
-              mainPath: '/path/to/fiddle/',
-            }),
-          } as any,
-        });
+        const runner = await createFakeRunner({});
         (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
 
         await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
@@ -119,18 +123,7 @@ describe('Runner', () => {
     );
 
     it('hides the debug output if showConfig is false', async () => {
-      const runner = await Runner.create({
-        installer: {
-          install: jest.fn().mockResolvedValue('/path/to/electron/executable'),
-        } as any,
-        fiddleFactory: {
-          create: jest.fn().mockResolvedValue({
-            source:
-              'https://gist.github.com/642fa8daaebea6044c9079e3f8a46390.git',
-            mainPath: '/path/to/fiddle/',
-          }),
-        } as any,
-      });
+      const runner = await createFakeRunner({});
       (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
 
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
@@ -144,14 +137,10 @@ describe('Runner', () => {
     });
 
     it('throws on invalid fiddle', async () => {
-      const runner = await Runner.create({
-        installer: {
-          install: jest.fn().mockResolvedValue('/path/to/electron/executable'),
-        } as any,
-        fiddleFactory: {
-          create: jest.fn(), // factory returns undefined
-        } as any,
+      const runner = await createFakeRunner({
+        generatedFiddle: null,
       });
+      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
 
       await expect(runner.spawn('12.0.1', 'invalid-fiddle')).rejects.toEqual(
         new Error(`Invalid fiddle: "'invalid-fiddle'"`),
