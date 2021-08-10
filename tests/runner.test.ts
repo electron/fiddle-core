@@ -2,6 +2,7 @@
 
 import { Runner } from '../src/index';
 import child_process from 'child_process';
+import { EventEmitter } from 'events';
 
 jest.mock('child_process');
 
@@ -146,5 +147,29 @@ describe('Runner', () => {
         new Error(`Invalid fiddle: "'invalid-fiddle'"`),
       );
     });
+  });
+
+  describe.only('run()', () => {
+    it.each([
+      ['test_passed', 'exit', 0],
+      ['test_failed', 'exit', 1],
+      ['test_error', 'exit', 999],
+      ['system_error', 'error', 1],
+    ])(
+      'can handle a test with the `%s` status',
+      async (status, event, exitCode) => {
+        const runner = await Runner.create({});
+        const fakeSubprocess = new EventEmitter();
+        runner.spawn = jest.fn().mockResolvedValue(fakeSubprocess);
+
+        // delay to ensure that the listeners in run() are set up.
+        process.nextTick(() => {
+          fakeSubprocess.emit(event, exitCode);
+        });
+
+        const result = await runner.run('fake', 'parameters');
+        expect(result).toStrictEqual({ status });
+      },
+    );
   });
 });
