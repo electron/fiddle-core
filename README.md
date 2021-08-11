@@ -72,7 +72,7 @@ const result = await runner.run('15.0.0-alpha.1', files);
 // bisect a regression test across a range of Electron versions
 const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo);
 
-// see also `Runner.spawn()` and `Runner.spawnSync()` in Advanced Use
+// see also `Runner.spawn()` in Advanced Use
 ```
 
 ### Managing Electron Installations
@@ -142,9 +142,6 @@ range = releases.inMajor(10);
 ```ts
 import { Runner } from 'fiddle-core';
 
-// third argument is same as node.spawnSync()'s opts
-const result = await runner.spawnSync('12.0.0', fiddle, nodeSpawnSyncOpts);
-
 // third argument is same as node.spawn()'s opts
 const child = await runner.spawn('12.0.1', fiddle, nodeSpawnOpts);
 
@@ -206,4 +203,3 @@ const fiddle = await factory.from([
   ['main.js', '"use strict";'],
 ]);
 ```
-

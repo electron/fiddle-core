@@ -1,12 +1,5 @@
 import { Writable } from 'stream';
-import {
-  ChildProcess,
-  SpawnOptions,
-  SpawnSyncOptions,
-  SpawnSyncReturns,
-  spawn,
-  spawnSync,
-} from 'child_process';
+import { ChildProcess, SpawnOptions, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -39,8 +32,6 @@ const DefaultRunnerOpts: RunnerOptions = Object.freeze({
 });
 
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
-
-export type RunnerSpawnSyncOptions = SpawnSyncOptions & RunnerOptions;
 
 export interface TestResult {
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
@@ -173,40 +164,6 @@ export class Runner {
     return child;
   }
 
-  public async spawnSync(
-    versionIn: string | SemVer,
-    fiddleIn: FiddleSource,
-    opts: RunnerSpawnSyncOptions = {},
-  ): Promise<SpawnSyncReturns<string>> {
-    const d = debug('fiddle-core:Runner.spawnSync');
-
-    // process the input parameters
-    opts = { ...DefaultRunnerOpts, ...opts };
-    const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
-    const fiddle = await this.fiddleFactory.create(fiddleIn);
-    if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
-
-    // set up the electron binary and the fiddle
-    const electronExec = await this.getExec(version);
-    let exec = electronExec;
-    let args = [...(opts.args || []), fiddle.mainPath];
-    if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
-
-    d(inspect({ exec, args, opts }));
-    const result = spawnSync(exec, args, {
-      ...opts,
-      encoding: 'utf8',
-    });
-
-    if (opts.out) {
-      if (opts.showConfig)
-        opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
-      opts.out.write(result.stdout);
-    }
-
-    return result;
-  }
-
   private static displayEmoji(result: TestResult): string {
     switch (result.status) {
       case 'system_error':
@@ -237,7 +194,7 @@ export class Runner {
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
-    opts: RunnerSpawnSyncOptions = DefaultRunnerOpts,
+    opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
     const subprocess = await this.spawn(version, fiddle, opts);
 
@@ -258,7 +215,7 @@ export class Runner {
     version_a: string | SemVer,
     version_b: string | SemVer,
     fiddleIn: FiddleSource,
-    opts: RunnerSpawnSyncOptions = DefaultRunnerOpts,
+    opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<BisectResult> {
     const { out } = opts;
     const log = (first: unknown, ...rest: unknown[]) => {
