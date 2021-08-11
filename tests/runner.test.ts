@@ -174,7 +174,7 @@ describe('Runner', () => {
   });
 
   describe('bisect()', () => {
-    it('can bisect a test (right side range)', async () => {
+    it.skip('can bisect a test (right side range)', async () => {
       const runner = await createFakeRunner({});
       const resultMap: Map<string, TestResult> = new Map([
         ['12.0.0', { status: 'test_passed' }],
@@ -228,7 +228,7 @@ describe('Runner', () => {
       });
     });
 
-    it('can handle the trivial case', async () => {
+    it.skip('can handle the trivial case', async () => {
       const runner = await createFakeRunner({});
       const resultMap: Map<string, TestResult> = new Map([
         ['12.0.0', { status: 'test_passed' }],
