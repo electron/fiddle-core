@@ -244,8 +244,10 @@ export class Runner {
     );
 
     // bisect through the releases
-    let left = 0;
-    let right = versions.length - 1;
+    const LEFT_POS = 0;
+    const RIGHT_POS = versions.length - 1;
+    let left = LEFT_POS;
+    let right = RIGHT_POS;
     let result: TestResult | undefined = undefined;
     const testOrder: (number | undefined)[] = [];
     const results = new Array<TestResult>(versions.length);
@@ -258,7 +260,6 @@ export class Runner {
       result = await this.run(ver.version, fiddle, opts);
       results[mid] = result;
       log(`${Runner.displayResult(result)} ${versions[mid].version}\n`);
-
       if (result.status === 'test_passed') {
         left = mid;
         continue;
@@ -268,6 +269,19 @@ export class Runner {
       } else {
         break;
       }
+    }
+
+    // validates the status of the boundary versions if we've reached the end
+    // of the bisect and one of our pointers is at a boundary.
+
+    const boundaries: Array<number> = [];
+    if (left === LEFT_POS && !results[LEFT_POS]) boundaries.push(LEFT_POS);
+    if (right === RIGHT_POS && !results[RIGHT_POS]) boundaries.push(RIGHT_POS);
+
+    for (const position of boundaries) {
+      const result = await this.run(versions[position].version, fiddle, opts);
+      results[position] = result;
+      log(`${Runner.displayResult(result)} ${versions[position].version}\n`);
     }
 
     log(`🏁 finished bisecting across ${versions.length} versions...`);
@@ -297,19 +311,25 @@ export class Runner {
           `https://github.com/electron/electron/compare/v${good}...v${bad} ↔`,
         ].join('\n'),
       );
-    } else {
-      // FIXME: log some failure
-    }
 
-    if (success) {
       return {
         range: [versions[left].version, versions[right].version],
         status: 'bisect_succeeded',
       };
+    } else {
+      // FIXME: log some failure
+      if (
+        result?.status === 'test_error' ||
+        result?.status === 'system_error'
+      ) {
+        return { status: result.status };
+      }
+
+      if (results[left].status === results[right].status) {
+        return { status: 'test_error' };
+      }
+
+      return { status: 'system_error' };
     }
-    if (result?.status === 'test_error' || result?.status === 'system_error') {
-      return { status: result.status };
-    }
-    return { status: 'system_error' };
   }
 }
