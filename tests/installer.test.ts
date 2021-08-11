@@ -26,15 +26,12 @@ describe('Installer', () => {
     nock.disableNetConnect();
     nockScope = nock('https://github.com:443');
     nockScope
-      // Note: if/when tests fail on non-Linux platforms, pelase add the
-      // needed zipfiles for other platforms instead of writing fakes.
-      // Live Electron versions are desirable for the Installer tests
-      .get(/electron-v13.1.7-linux-x64\.zip$/)
-      .replyWithFile(200, fixture('electron-v13.1.7-linux-x64.zip'), {
+      .get(/electron-v13.1.7-.*\.zip$/)
+      .replyWithFile(200, fixture('electron-v13.1.7.zip'), {
         'Content-Type': 'application/zip',
       })
-      .get(/electron-v12.0.15-linux-x64.zip$/)
-      .replyWithFile(200, fixture('electron-v12.0.15-linux-x64.zip'), {
+      .get(/electron-v12.0.15-.*\.zip$/)
+      .replyWithFile(200, fixture('electron-v12.0.15.zip'), {
         'Content-Type': 'application/zip',
       })
       .get(/SHASUMS256\.txt$/)

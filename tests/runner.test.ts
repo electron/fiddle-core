@@ -48,6 +48,19 @@ async function createFakeRunner({
 }
 
 describe('Runner', () => {
+  describe('displayResult()', () => {
+    it('returns the correct message for each test result status', () => {
+      expect(Runner.displayResult({ status: 'test_passed' })).toBe('🟢 passed');
+      expect(Runner.displayResult({ status: 'test_failed' })).toBe('🔴 failed');
+      expect(Runner.displayResult({ status: 'test_error' })).toBe(
+        '🔵 test error: test did not pass or fail',
+      );
+      expect(Runner.displayResult({ status: 'system_error' })).toBe(
+        '🟠 system error: test did not pass or fail',
+      );
+    });
+  });
+
   describe('create()', () => {
     it('creates a Runner object with the expected properties', async () => {
       const runner = await Runner.create({});
