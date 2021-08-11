@@ -1,14 +1,7 @@
 import { DefaultPaths, Paths } from './paths';
 import { Installer, InstallState, InstallStateEvent } from './installer';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
-import {
-  BisectResult,
-  Runner,
-  RunnerOptions,
-  RunnerSpawnOptions,
-  RunnerSpawnSyncOptions,
-  TestResult,
-} from './runner';
+import { BisectResult, Runner, RunnerOptions, TestResult } from './runner';
 import {
   BaseVersions,
   ElectronVersions,
@@ -33,8 +26,6 @@ export {
   Paths,
   Runner,
   RunnerOptions,
-  RunnerSpawnOptions,
-  RunnerSpawnSyncOptions,
   SemOrStr,
   SemVer,
   TestResult,
