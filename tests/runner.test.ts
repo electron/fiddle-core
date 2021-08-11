@@ -252,8 +252,41 @@ describe('Runner', () => {
       });
     });
 
-    it.todo('throws on invalid fiddle');
-    it.todo('handles test errors');
-    it.todo('handles system errors');
+    it('throws on invalid fiddle', async () => {
+      const runner = await createFakeRunner({
+        generatedFiddle: null,
+      });
+
+      await expect(
+        runner.bisect('12.0.0', '12.0.5', 'invalid-fiddle'),
+      ).rejects.toEqual(new Error(`Invalid fiddle: "'invalid-fiddle'"`));
+    });
+
+    it.skip.each([['test_error' as const], ['system_error' as const]])(
+      'returns %s status if encountered during a test',
+      async (status) => {
+        const runner = await createFakeRunner({});
+        const resultMap: Map<string, TestResult> = new Map([
+          ['12.0.0', { status }],
+          ['12.0.1', { status }],
+          ['12.0.2', { status }],
+        ]);
+        runner.run = jest.fn((version) => {
+          return new Promise((resolve) =>
+            resolve(resultMap.get(version as string) as TestResult),
+          );
+        });
+
+        const result = await runner.bisect(
+          '12.0.0',
+          '12.0.2',
+          '642fa8daaebea6044c9079e3f8a46390',
+        );
+
+        expect(result).toStrictEqual({ status });
+      },
+    );
+
+    it.todo('returns a system_error if no other return condition was met');
   });
 });
