@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-unsafe-assignment:0 */
 
-import { Runner } from '../src/index';
+import { Runner, TestResult } from '../src/index';
 import child_process from 'child_process';
 import { EventEmitter } from 'events';
 
@@ -149,7 +149,7 @@ describe('Runner', () => {
     });
   });
 
-  describe.only('run()', () => {
+  describe('run()', () => {
     it.each([
       ['test_passed', 'exit', 0],
       ['test_failed', 'exit', 1],
@@ -171,5 +171,89 @@ describe('Runner', () => {
         expect(result).toStrictEqual({ status });
       },
     );
+  });
+
+  describe('bisect()', () => {
+    it('can bisect a test (right side range)', async () => {
+      const runner = await createFakeRunner({});
+      const resultMap: Map<string, TestResult> = new Map([
+        ['12.0.0', { status: 'test_passed' }],
+        ['12.0.1', { status: 'test_passed' }],
+        ['12.0.2', { status: 'test_passed' }],
+        ['12.0.3', { status: 'test_passed' }],
+        ['12.0.4', { status: 'test_passed' }],
+        ['12.0.5', { status: 'test_failed' }],
+      ]);
+      runner.run = jest.fn((version) => {
+        return new Promise((resolve) =>
+          resolve(resultMap.get(version as string) as TestResult),
+        );
+      });
+
+      const result = await runner.bisect(
+        '12.0.0',
+        '12.0.5',
+        '642fa8daaebea6044c9079e3f8a46390',
+      );
+      expect(result).toStrictEqual({
+        range: ['12.0.4', '12.0.5'],
+        status: 'bisect_succeeded',
+      });
+    });
+
+    it('can bisect a test (left side range)', async () => {
+      const runner = await createFakeRunner({});
+      const resultMap: Map<string, TestResult> = new Map([
+        ['12.0.0', { status: 'test_passed' }],
+        ['12.0.1', { status: 'test_passed' }],
+        ['12.0.2', { status: 'test_failed' }],
+        ['12.0.3', { status: 'test_failed' }],
+        ['12.0.4', { status: 'test_failed' }],
+        ['12.0.5', { status: 'test_failed' }],
+      ]);
+      runner.run = jest.fn((version) => {
+        return new Promise((resolve) =>
+          resolve(resultMap.get(version as string) as TestResult),
+        );
+      });
+
+      const result = await runner.bisect(
+        '12.0.0',
+        '12.0.5',
+        '642fa8daaebea6044c9079e3f8a46390',
+      );
+      expect(result).toStrictEqual({
+        range: ['12.0.1', '12.0.2'],
+        status: 'bisect_succeeded',
+      });
+    });
+
+    it('can handle the trivial case', async () => {
+      const runner = await createFakeRunner({});
+      const resultMap: Map<string, TestResult> = new Map([
+        ['12.0.0', { status: 'test_passed' }],
+        ['12.0.1', { status: 'test_failed' }],
+      ]);
+      runner.run = jest.fn((version) => {
+        return new Promise((resolve) =>
+          resolve(resultMap.get(version as string) as TestResult),
+        );
+      });
+
+      const result = await runner.bisect(
+        '12.0.0',
+        '12.0.1',
+        '642fa8daaebea6044c9079e3f8a46390',
+      );
+
+      expect(result).toStrictEqual({
+        range: ['12.0.0', '12.0.1'],
+        status: 'bisect_succeeded',
+      });
+    });
+
+    it.todo('throws on invalid fiddle');
+    it.todo('handles test errors');
+    it.todo('handles system errors');
   });
 });
