@@ -174,7 +174,7 @@ describe('Runner', () => {
   });
 
   describe('bisect()', () => {
-    it.skip('can bisect a test (right side range)', async () => {
+    it('can bisect a test (right side range)', async () => {
       const runner = await createFakeRunner({});
       const resultMap: Map<string, TestResult> = new Map([
         ['12.0.0', { status: 'test_passed' }],
@@ -228,7 +228,7 @@ describe('Runner', () => {
       });
     });
 
-    it.skip('can handle the trivial case', async () => {
+    it('can handle the trivial case', async () => {
       const runner = await createFakeRunner({});
       const resultMap: Map<string, TestResult> = new Map([
         ['12.0.0', { status: 'test_passed' }],
@@ -262,7 +262,7 @@ describe('Runner', () => {
       ).rejects.toEqual(new Error(`Invalid fiddle: "'invalid-fiddle'"`));
     });
 
-    it.skip.each([['test_error' as const], ['system_error' as const]])(
+    it.each([['test_error' as const], ['system_error' as const]])(
       'returns %s status if encountered during a test',
       async (status) => {
         const runner = await createFakeRunner({});
