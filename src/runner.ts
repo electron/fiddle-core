@@ -207,7 +207,7 @@ export class Runner {
     return result;
   }
 
-  public static displayEmoji(result: TestResult): string {
+  private static displayEmoji(result: TestResult): string {
     switch (result.status) {
       case 'system_error':
         return '🟠';
