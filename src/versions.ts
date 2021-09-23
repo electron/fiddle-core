@@ -183,6 +183,8 @@ export class BaseVersions implements Versions {
   }
 }
 
+const VERSION_CACHE_TTL_MS = 4 * 60 * 60 * 1000; // cache for N hours
+
 /**
  * Implementation of Versions that self-populates from release information at
  * https://releases.electronjs.org/releases.json .
@@ -190,8 +192,6 @@ export class BaseVersions implements Versions {
  * This is generally what to use in production.
  */
 export class ElectronVersions extends BaseVersions {
-  private static readonly freshnessMs = 4 * 60 * 60 * 1000; // cache for N hours
-
   private constructor(
     private readonly versionsCache: string,
     private mtimeMs: number,
@@ -220,7 +220,7 @@ export class ElectronVersions extends BaseVersions {
     const now = Date.now();
     try {
       const st = await fs.stat(versionsCache);
-      if (now <= st.mtimeMs + ElectronVersions.freshnessMs)
+      if (now <= st.mtimeMs + VERSION_CACHE_TTL_MS)
         versions = (await fs.readJson(versionsCache)) as unknown;
     } catch (err) {
       // cache file missing
@@ -244,7 +244,7 @@ export class ElectronVersions extends BaseVersions {
     // if it's still fresh, do nothing
     const { mtimeMs, versionsCache } = this;
     const now = Date.now();
-    if (now <= mtimeMs + ElectronVersions.freshnessMs) return;
+    if (now <= mtimeMs + VERSION_CACHE_TTL_MS) return;
 
     // update the cache
     try {
