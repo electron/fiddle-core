@@ -220,7 +220,7 @@ export class ElectronVersions extends BaseVersions {
     const now = Date.now();
     try {
       const st = await fs.stat(versionsCache);
-      if (st.mtimeMs + ElectronVersions.freshnessMs >= now)
+      if (now <= st.mtimeMs + ElectronVersions.freshnessMs)
         versions = (await fs.readJson(versionsCache)) as unknown;
     } catch (err) {
       // cache file missing
@@ -244,7 +244,7 @@ export class ElectronVersions extends BaseVersions {
     // if it's still fresh, do nothing
     const { mtimeMs, versionsCache } = this;
     const now = Date.now();
-    if (mtimeMs + ElectronVersions.freshnessMs >= now) return;
+    if (now <= mtimeMs + ElectronVersions.freshnessMs) return;
 
     // update the cache
     try {
