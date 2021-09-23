@@ -88,10 +88,9 @@ const NUM_SUPPORTED_MAJORS = 4;
 export class BaseVersions implements Versions {
   private readonly map = new Map<string, SemVer>();
 
-  public constructor(val: unknown) {
+  protected setVersions(val: unknown) {
     // build the array
     let parsed: Array<SemVer | null> = [];
-
     if (isArrayOfVersionObjects(val)) {
       parsed = val.map(({ version }) => semverParse(version));
     } else if (isArrayOfStrings(val)) {
@@ -101,7 +100,12 @@ export class BaseVersions implements Versions {
     // insert them in sorted order
     const semvers = parsed.filter((sem) => Boolean(sem)) as SemVer[];
     semvers.sort((a, b) => compareVersions(a, b));
-    this.map = new Map(semvers.map((sem) => [sem.version, sem]));
+    this.map.clear();
+    for (const sem of semvers) this.map.set(sem.version, sem);
+  }
+
+  public constructor(versions: unknown) {
+    this.setVersions(versions);
   }
 
   public get prereleaseMajors(): number[] {
@@ -186,8 +190,24 @@ export class BaseVersions implements Versions {
  * This is generally what to use in production.
  */
 export class ElectronVersions extends BaseVersions {
-  private constructor(values: unknown) {
+  private static readonly freshnessMs = 4 * 60 * 60 * 1000; // cache for N hours
+
+  private constructor(
+    private readonly versionsCache: string,
+    private mtimeMs: number,
+    values: unknown,
+  ) {
     super(values);
+  }
+
+  private static async fetchVersions(cacheFile: string): Promise<unknown> {
+    const d = debug('fiddle-core:ElectronVersions:fetchVersions');
+    const url = 'https://releases.electronjs.org/releases.json';
+    d('fetching releases list from', url);
+    const response = await fetch(url);
+    const json = (await response.json()) as unknown;
+    await fs.outputJson(cacheFile, json);
+    return json;
   }
 
   public static async create(
@@ -195,23 +215,87 @@ export class ElectronVersions extends BaseVersions {
   ): Promise<ElectronVersions> {
     const d = debug('fiddle-core:ElectronVersions:create');
     const { versionsCache } = { ...DefaultPaths, ...paths };
+
+    let versions: unknown;
+    const now = Date.now();
     try {
       const st = await fs.stat(versionsCache);
-      const cacheIntervalMs = 4 * 60 * 60 * 1000; // re-fetch after 4 hours
-      if (st.mtime.getTime() + cacheIntervalMs > Date.now()) {
-        return new ElectronVersions(await fs.readJson(versionsCache));
-      }
+      if (st.mtimeMs + ElectronVersions.freshnessMs >= now)
+        versions = (await fs.readJson(versionsCache)) as unknown;
     } catch (err) {
-      // if no cache, fetch from electronjs.org
-      d(`unable to stat cache file "${versionsCache}"`, err);
+      // cache file missing
     }
 
-    const url = 'https://releases.electronjs.org/releases.json';
-    d('fetching releases list from', url);
-    const response = await fetch(url);
-    const json = (await response.json()) as unknown;
-    await fs.outputJson(versionsCache, json);
-    d(`saved "${versionsCache}"`);
-    return new ElectronVersions(json);
+    if (!versions) {
+      try {
+        versions = await ElectronVersions.fetchVersions(versionsCache);
+      } catch (err) {
+        d('error fetching versions', err);
+      }
+    }
+
+    return new ElectronVersions(versionsCache, now, versions);
+  }
+
+  // upate the cache if it's too old
+  private async keepFresh(): Promise<void> {
+    const d = debug('fiddle-core:ElectronVersions:keepFresh');
+
+    // if it's still fresh, do nothing
+    const { mtimeMs, versionsCache } = this;
+    const now = Date.now();
+    if (mtimeMs + ElectronVersions.freshnessMs >= now) return;
+
+    // update the cache
+    try {
+      this.mtimeMs = now;
+      const versions = await ElectronVersions.fetchVersions(versionsCache);
+      this.setVersions(versions);
+      d(`saved "${versionsCache}"`);
+    } catch (err) {
+      d('error fetching versions', err);
+      this.mtimeMs = mtimeMs;
+    }
+  }
+
+  public override get prereleaseMajors(): number[] {
+    void this.keepFresh();
+    return super.prereleaseMajors;
+  }
+  public override get stableMajors(): number[] {
+    void this.keepFresh();
+    return super.stableMajors;
+  }
+  public override get supportedMajors(): number[] {
+    void this.keepFresh();
+    return super.supportedMajors;
+  }
+  public override get obsoleteMajors(): number[] {
+    void this.keepFresh();
+    return super.obsoleteMajors;
+  }
+  public override get versions(): SemVer[] {
+    void this.keepFresh();
+    return super.versions;
+  }
+  public override get latest(): SemVer | undefined {
+    void this.keepFresh();
+    return super.latest;
+  }
+  public override get latestStable(): SemVer | undefined {
+    void this.keepFresh();
+    return super.latestStable;
+  }
+  public override isVersion(ver: SemOrStr): boolean {
+    void this.keepFresh();
+    return super.isVersion(ver);
+  }
+  public override inMajor(major: number): SemVer[] {
+    void this.keepFresh();
+    return super.inMajor(major);
+  }
+  public override inRange(a: SemOrStr, b: SemOrStr): SemVer[] {
+    void this.keepFresh();
+    return super.inRange(a, b);
   }
 }
