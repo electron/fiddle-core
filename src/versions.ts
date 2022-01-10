@@ -240,24 +240,25 @@ export class ElectronVersions extends BaseVersions {
     return new ElectronVersions(versionsCache, now, versions);
   }
 
-  // upate the cache if it's too old
-  private async keepFresh(): Promise<void> {
-    const d = debug('fiddle-core:ElectronVersions:keepFresh');
-
-    // if it's still fresh, do nothing
+  // update the cache
+  public async fetch(): Promise<void> {
+    const d = debug('fiddle-core:ElectronVersions:fetch');
     const { mtimeMs, versionsCache } = this;
-    const now = Date.now();
-    if (ElectronVersions.isCacheFresh(mtimeMs, now)) return;
-
-    // update the cache
     try {
-      this.mtimeMs = now;
+      this.mtimeMs = Date.now();
       const versions = await ElectronVersions.fetchVersions(versionsCache);
       this.setVersions(versions);
       d(`saved "${versionsCache}"`);
     } catch (err) {
       d('error fetching versions', err);
       this.mtimeMs = mtimeMs;
+    }
+  }
+
+  // upate the cache iff it's too old
+  private async keepFresh(): Promise<void> {
+    if (!ElectronVersions.isCacheFresh(this.mtimeMs, Date.now())) {
+      await this.fetch();
     }
   }
 
