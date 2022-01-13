@@ -95,6 +95,8 @@ export class BaseVersions implements Versions {
       parsed = val.map(({ version }) => semverParse(version));
     } else if (isArrayOfStrings(val)) {
       parsed = val.map((version) => semverParse(version));
+    } else {
+      console.warn('Unrecognized versions:', val);
     }
 
     // insert them in sorted order
