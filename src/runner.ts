@@ -24,12 +24,12 @@ export interface RunnerOptions {
   showConfig?: boolean;
 }
 
-const DefaultRunnerOpts: RunnerOptions = Object.freeze({
-  args: [],
+const DefaultRunnerOpts: RunnerOptions = {
+  args: <string[]>[],
   headless: false,
   out: process.stdout,
   showConfig: true,
-});
+} as const;
 
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
