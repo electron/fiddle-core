@@ -116,7 +116,7 @@ export class Installer extends EventEmitter {
         if (match) this.setState(match[1], 'downloaded');
       }
     } catch {
-      // no donwnload directory yet
+      // no download directory yet
     }
 
     // being downloaded now...

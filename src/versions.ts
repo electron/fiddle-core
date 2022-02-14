@@ -88,13 +88,15 @@ const NUM_SUPPORTED_MAJORS = 4;
 export class BaseVersions implements Versions {
   private readonly map = new Map<string, SemVer>();
 
-  protected setVersions(val: unknown) {
+  protected setVersions(val: unknown): void {
     // build the array
     let parsed: Array<SemVer | null> = [];
     if (isArrayOfVersionObjects(val)) {
       parsed = val.map(({ version }) => semverParse(version));
     } else if (isArrayOfStrings(val)) {
       parsed = val.map((version) => semverParse(version));
+    } else {
+      console.warn('Unrecognized versions:', val);
     }
 
     // insert them in sorted order
