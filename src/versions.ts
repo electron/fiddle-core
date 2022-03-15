@@ -228,7 +228,7 @@ export class ElectronVersions extends BaseVersions {
       if (ElectronVersions.isCacheFresh(st.mtimeMs, now))
         versions = (await fs.readJson(versionsCache)) as unknown;
     } catch (err) {
-      // cache file missing or cannot be read
+      d('cache file missing or cannot be read', err);
     }
 
     if (!versions) {
