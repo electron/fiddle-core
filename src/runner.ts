@@ -53,12 +53,14 @@ export class Runner {
     getos((err, result) => (this.osInfo = inspect(result || err)));
   }
 
-  public static async create(opts: {
-    installer?: Installer;
-    fiddleFactory?: FiddleFactory;
-    paths?: Partial<Paths>;
-    versions?: Versions;
-  }): Promise<Runner> {
+  public static async create(
+    opts: {
+      installer?: Installer;
+      fiddleFactory?: FiddleFactory;
+      paths?: Partial<Paths>;
+      versions?: Versions;
+    } = {},
+  ): Promise<Runner> {
     const paths = Object.freeze({ ...DefaultPaths, ...(opts.paths || {}) });
     const installer = opts.installer || new Installer(paths);
     const versions = opts.versions || (await ElectronVersions.create(paths));
