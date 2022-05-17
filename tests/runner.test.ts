@@ -63,7 +63,7 @@ describe('Runner', () => {
 
   describe('create()', () => {
     it('creates a Runner object with the expected properties', async () => {
-      const runner = await Runner.create({});
+      const runner = await Runner.create();
       expect(Object.keys(runner)).toEqual([
         'installer',
         'versions',
@@ -171,7 +171,7 @@ describe('Runner', () => {
     ])(
       'can handle a test with the `%s` status',
       async (status, event, exitCode) => {
-        const runner = await Runner.create({});
+        const runner = await Runner.create();
         const fakeSubprocess = new EventEmitter();
         runner.spawn = jest.fn().mockResolvedValue(fakeSubprocess);
 
