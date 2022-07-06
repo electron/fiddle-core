@@ -82,20 +82,20 @@ import { Installer } from 'fiddle-core';
 
 const installer = new Installer();
 installer.on('state-changed', (version, state) => {
-  console.log(`Version "${version}" state changed: "${state}");
+  console.log(`Version "${version}" state changed: "${state}"`);
 });
 
 // download a version of electron
-await electron.ensureDownloaded('12.0.15');
-// expect(electron.state('12.0.5').toBe('downloaded');
+await installer.ensureDownloaded('12.0.15');
+// expect(installer.state('12.0.5').toBe('downloaded');
 
 // remove a download
-await electron.remove('12.0.15');
-// expect(electron.state('12.0.15').toBe('not-downloaded');
+await installer.remove('12.0.15');
+// expect(installer.state('12.0.15').toBe('not-downloaded');
 
 // install a specific version for the runner to use
-const exec = await electron.install('11.4.10');
-// expect(electron.state('11.4.10').toBe('installed');
+const exec = await installer.install('11.4.10');
+// expect(installer.state('11.4.10').toBe('installed');
 // expect(fs.accessSync(exec, fs.constants.X_OK)).toBe(true);
 ```
 
