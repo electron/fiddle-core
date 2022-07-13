@@ -129,15 +129,59 @@ export class Installer extends EventEmitter {
   public async remove(version: string): Promise<void> {
     const d = debug('fiddle-core:Installer:remove');
     d(version);
-    // remove the zipfile
-    const zip = path.join(this.paths.electronDownloads, getZipName(version));
-    await fs.remove(zip);
+    let isBinaryDeleted = false;
+    // utility to re-run removal functions upon failure
+    // due to windows filesystem lockfile jank
+    const rerunner = async (
+      path: string,
+      func: (path: string) => Promise<void>,
+      counter = 1,
+    ): Promise<boolean> => {
+      try {
+        await func(path);
+        return true;
+      } catch (error) {
+        console.warn(
+          `Installer: failed to run ${func.name} for ${version}, but failed`,
+          error,
+        );
+        if (counter < 4) {
+          console.log(`Installer: Trying again to run ${func.name}`);
+          await rerunner(path, func, counter + 1);
+        }
+      }
+      return false;
+    };
+
+    const binaryCleaner = async (path: string) => {
+      if (fs.existsSync(path)) {
+        await fs.remove(path);
+      }
+    };
+    // get the zip path
+    const zipPath = path.join(
+      this.paths.electronDownloads,
+      getZipName(version),
+    );
+    const isZipDeleted = await rerunner(zipPath, binaryCleaner);
 
     // maybe uninstall it
-    if (this.installedVersion === version)
-      await fs.remove(this.paths.electronInstall);
+    if (this.installedVersion === version) {
+      isBinaryDeleted = await rerunner(
+        this.paths.electronInstall,
+        binaryCleaner,
+      );
+    } else {
+      // If the current version binary doesn't exists
+      isBinaryDeleted = true;
+    }
 
-    this.setState(version, 'missing');
+    if (isZipDeleted && isBinaryDeleted) {
+      this.setState(version, 'missing');
+    } else {
+      // Ideally the execution shouldn't reach this point
+      console.warn(`Installer: Failed to remove version ${version}`);
+    }
   }
 
   /** The current Electron installation, if any. */
