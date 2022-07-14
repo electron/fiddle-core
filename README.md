@@ -81,7 +81,7 @@ const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo)
 import { Installer } from 'fiddle-core';
 
 const installer = new Installer();
-installer.on('state-changed', (version, state) => {
+installer.on('state-changed', ({version, state}) => {
   console.log(`Version "${version}" state changed: "${state}"`);
 });
 
