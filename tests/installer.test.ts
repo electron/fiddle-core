@@ -71,10 +71,20 @@ describe('Installer', () => {
   }
 
   async function doInstall(installer: Installer, version: string) {
-    const func = () => installer.install(version);
+    let isDownloaded = false;
+    const progressCallback = () => {
+      isDownloaded = true;
+    };
+
+    // Version is already downloaded and present in local
+    if (installer.state(version) !== 'missing') {
+      isDownloaded = true;
+    }
+    const func = () => installer.install(version, progressCallback);
     const { events, result } = await listenWhile(installer, func);
     const exec = result as string;
 
+    expect(isDownloaded).toBe(true);
     expect(installer.state(version)).toBe('installed');
     expect(installer.installedVersion).toBe(version);
 
@@ -82,10 +92,20 @@ describe('Installer', () => {
   }
 
   async function doDownload(installer: Installer, version: string) {
-    const func = () => installer.ensureDownloaded(version);
+    let isDownloaded = false;
+    const progressCallback = () => {
+      isDownloaded = true;
+    };
+
+    // Version is already downloaded and present in local
+    if (installer.state(version) !== 'missing') {
+      isDownloaded = true;
+    }
+    const func = () => installer.ensureDownloaded(version, progressCallback);
     const { events, result } = await listenWhile(installer, func);
     const zipfile = result as string;
 
+    expect(isDownloaded).toBe(true);
     expect(fs.existsSync(zipfile)).toBe(true);
     expect(installer.state(version)).toBe('downloaded');
 

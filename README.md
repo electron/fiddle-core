@@ -89,12 +89,19 @@ installer.on('state-changed', ({version, state}) => {
 await installer.ensureDownloaded('12.0.15');
 // expect(installer.state('12.0.5').toBe('downloaded');
 
+// download a version with callback
+const callback = (progress: ProgressObject) => {
+  const percent = progress.percent * 100;
+  console.log(`Current download progress %: ${percent.toFixed(2)}`);
+};
+await installer.ensureDownloaded('12.0.15', callback);
+
 // remove a download
 await installer.remove('12.0.15');
 // expect(installer.state('12.0.15').toBe('not-downloaded');
 
 // install a specific version for the runner to use
-const exec = await installer.install('11.4.10');
+const exec = await installer.install('11.4.10'); // callback can be passed here similar to one passed in `ensureDownloaded`
 // expect(installer.state('11.4.10').toBe('installed');
 // expect(fs.accessSync(exec, fs.constants.X_OK)).toBe(true);
 ```

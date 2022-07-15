@@ -190,9 +190,16 @@ export class Installer extends EventEmitter {
       if (state === 'installed') return version;
   }
 
-  private async download(version: string): Promise<string> {
+  private async download(
+    version: string,
+    progressCallback?: (progress: ProgressObject) => void,
+  ): Promise<string> {
     let pctDone = 0;
     const getProgressCallback = (progress: ProgressObject) => {
+      if (progressCallback) {
+        // Call the user passed callback function
+        progressCallback(progress);
+      }
       const pct = Math.round(progress.percent * 100);
       if (pctDone + 10 <= pct) {
         const emoji = pct >= 100 ? '🏁' : '⏳';
@@ -210,7 +217,10 @@ export class Installer extends EventEmitter {
     return zipFile;
   }
 
-  private async ensureDownloadedImpl(version: string): Promise<string> {
+  private async ensureDownloadedImpl(
+    version: string,
+    progressCallback?: (progress: ProgressObject) => void,
+  ): Promise<string> {
     const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
     const { electronDownloads } = this.paths;
     const zipFile = path.join(electronDownloads, getZipName(version));
@@ -219,7 +229,7 @@ export class Installer extends EventEmitter {
     if (state === 'missing') {
       d(`"${zipFile}" does not exist; downloading now`);
       this.setState(version, 'downloading');
-      const tempFile = await this.download(version);
+      const tempFile = await this.download(version, progressCallback);
       await fs.ensureDir(electronDownloads);
       await fs.move(tempFile, zipFile);
       this.setState(version, 'downloaded');
@@ -234,12 +244,15 @@ export class Installer extends EventEmitter {
   /** map of version string to currently-running active Promise */
   private downloading = new Map<string, Promise<string>>();
 
-  public async ensureDownloaded(version: string): Promise<string> {
+  public async ensureDownloaded(
+    version: string,
+    progressCallback?: (progress: ProgressObject) => void,
+  ): Promise<string> {
     const { downloading: promises } = this;
     let promise = promises.get(version);
     if (promise) return promise;
 
-    promise = this.ensureDownloadedImpl(version).finally(() =>
+    promise = this.ensureDownloadedImpl(version, progressCallback).finally(() =>
       promises.delete(version),
     );
     promises.set(version, promise);
@@ -249,7 +262,10 @@ export class Installer extends EventEmitter {
   /** the currently-installing version, if any */
   private installing: string | undefined;
 
-  public async install(version: string): Promise<string> {
+  public async install(
+    version: string,
+    progressCallback?: (progress: ProgressObject) => void,
+  ): Promise<string> {
     const d = debug(`fiddle-core:Installer:${version}:install`);
     const { electronInstall } = this.paths;
     const electronExec = Installer.getExecPath(electronInstall);
@@ -262,7 +278,7 @@ export class Installer extends EventEmitter {
     if (installedVersion === version) {
       d(`already installed`);
     } else {
-      const zipFile = await this.ensureDownloaded(version);
+      const zipFile = await this.ensureDownloaded(version, progressCallback);
       this.setState(version, 'installing');
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
