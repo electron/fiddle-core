@@ -40,6 +40,18 @@ export declare function compareVersions(a: SemVer, b: SemVer): number;
 
 export declare const DefaultPaths: Paths;
 
+export declare type ProgressObject = { percent: number };
+
+export declare interface Mirrors {
+    electronMirror: string;
+    electronNightlyMirror: string;
+}
+
+interface InstallerParams {
+    progressCallback: (progress: ProgressObject) => void;
+    mirror: Mirrors;
+}
+
 /**
  * Implementation of Versions that self-populates from release information at
  * https://releases.electronjs.org/releases.json .
@@ -106,10 +118,10 @@ export declare class Installer extends EventEmitter {
     private ensureDownloadedImpl;
     /** map of version string to currently-running active Promise */
     private downloading;
-    ensureDownloaded(version: string): Promise<string>;
+    ensureDownloaded(version: string, opts?: Partial<InstallerParams>): Promise<string>;
     /** the currently-installing version, if any */
     private installing;
-    install(version: string): Promise<string>;
+    install(version: string, opts?: Partial<InstallerParams>): Promise<string>;
 }
 
 /**
