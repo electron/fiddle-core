@@ -78,7 +78,7 @@ const result = await runner.bisect('10.0.0', '13.1.7', path_or_gist_or_git_repo)
 ### Managing Electron Installations
 
 ```ts
-import { Installer } from 'fiddle-core';
+import { Installer, ProgressObject } from 'fiddle-core';
 
 const installer = new Installer();
 installer.on('state-changed', ({version, state}) => {
@@ -89,12 +89,37 @@ installer.on('state-changed', ({version, state}) => {
 await installer.ensureDownloaded('12.0.15');
 // expect(installer.state('12.0.5').toBe('downloaded');
 
+// download a version with callback
+const callback = (progress: ProgressObject) => {
+  const percent = progress.percent * 100;
+  console.log(`Current download progress %: ${percent.toFixed(2)}`);
+};
+await installer.ensureDownloaded('12.0.15', {
+  progressCallback: callback,
+});
+
+// download a version with a specific mirror
+const npmMirrors = {
+  electronMirror: 'https://npmmirror.com/mirrors/electron/',
+  electronNightlyMirror: 'https://npmmirror.com/mirrors/electron-nightly/',
+},
+
+await installer.ensureDownloaded('12.0.15', {
+  mirror: npmMirrors,
+});
+
 // remove a download
 await installer.remove('12.0.15');
 // expect(installer.state('12.0.15').toBe('not-downloaded');
 
 // install a specific version for the runner to use
 const exec = await installer.install('11.4.10');
+
+// Installing with callback and custom mirrors
+await installer.install('11.4.10', {
+  progressCallback: callback,
+  mirror: npmMirrors,
+});
 // expect(installer.state('11.4.10').toBe('installed');
 // expect(fs.accessSync(exec, fs.constants.X_OK)).toBe(true);
 ```
