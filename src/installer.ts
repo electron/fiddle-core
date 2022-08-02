@@ -19,12 +19,13 @@ type ProgressObject = { percent: number };
  * See {@link Installer.state} to get this value.
  * See Installer.on('state-changed') to watch for state changes.
  */
-export type InstallState =
-  | 'missing'
-  | 'downloading'
-  | 'downloaded'
-  | 'installing'
-  | 'installed';
+export enum InstallState {
+  missing = 'missing',
+  downloading = 'downloading',
+  downloaded = 'downloaded',
+  installing = 'installing',
+  installed = 'installed',
+}
 
 export interface InstallStateEvent {
   version: string;
@@ -79,14 +80,14 @@ export class Installer extends EventEmitter {
   }
 
   public state(version: string): InstallState {
-    return this.stateMap.get(version) || 'missing';
+    return this.stateMap.get(version) || InstallState.missing;
   }
 
   private setState(version: string, state: InstallState) {
     const d = debug('fiddle-core:Installer:setState');
     const oldState = this.state(version);
 
-    if (state === 'missing') {
+    if (state === InstallState.missing) {
       this.stateMap.delete(version);
     } else {
       this.stateMap.set(version, state);
@@ -108,13 +109,13 @@ export class Installer extends EventEmitter {
     try {
       const versionFile = path.join(this.paths.electronInstall, 'version');
       const version = fs.readFileSync(versionFile, 'utf8');
-      this.setState(version, 'installed');
+      this.setState(version, InstallState.installed);
     } catch {
       // no current version
     }
 
     if (this.installing) {
-      this.setState(this.installing, 'installing');
+      this.setState(this.installing, InstallState.installing);
     }
 
     // already downloaded...
@@ -123,7 +124,7 @@ export class Installer extends EventEmitter {
     try {
       for (const file of fs.readdirSync(this.paths.electronDownloads)) {
         const match = reg.exec(file);
-        if (match) this.setState(match[1], 'downloaded');
+        if (match) this.setState(match[1], InstallState.downloaded);
       }
     } catch {
       // no download directory yet
@@ -131,7 +132,7 @@ export class Installer extends EventEmitter {
 
     // being downloaded now...
     for (const version of this.downloading.keys()) {
-      this.setState(version, 'downloading');
+      this.setState(version, InstallState.downloading);
     }
   }
 
@@ -187,7 +188,7 @@ export class Installer extends EventEmitter {
     }
 
     if (isZipDeleted && isBinaryDeleted) {
-      this.setState(version, 'missing');
+      this.setState(version, InstallState.missing);
     } else {
       // Ideally the execution shouldn't reach this point
       console.warn(`Installer: Failed to remove version ${version}`);
@@ -197,7 +198,7 @@ export class Installer extends EventEmitter {
   /** The current Electron installation, if any. */
   public get installedVersion(): string | undefined {
     for (const [version, state] of this.stateMap)
-      if (state === 'installed') return version;
+      if (state === InstallState.installed) return version;
   }
 
   private async download(
@@ -240,13 +241,13 @@ export class Installer extends EventEmitter {
     const zipFile = path.join(electronDownloads, getZipName(version));
 
     const state = this.state(version);
-    if (state === 'missing') {
+    if (state === InstallState.missing) {
       d(`"${zipFile}" does not exist; downloading now`);
-      this.setState(version, 'downloading');
+      this.setState(version, InstallState.downloading);
       const tempFile = await this.download(version, opts);
       await fs.ensureDir(electronDownloads);
       await fs.move(tempFile, zipFile);
-      this.setState(version, 'downloaded');
+      this.setState(version, InstallState.downloaded);
       d(`"${zipFile}" downloaded`);
     } else {
       d(`"${zipFile}" exists; no need to download`);
@@ -293,7 +294,7 @@ export class Installer extends EventEmitter {
       d(`already installed`);
     } else {
       const zipFile = await this.ensureDownloaded(version, opts);
-      this.setState(version, 'installing');
+      this.setState(version, InstallState.installing);
       d(`installing from "${zipFile}"`);
       await fs.emptyDir(electronInstall);
       // FIXME(anyone) is there a less awful way to wrangle asar
@@ -307,8 +308,9 @@ export class Installer extends EventEmitter {
         // @ts-ignore: yes, I know noAsar isn't defined in process
         process.noAsar = noAsar; // eslint-disable-line
       }
-      if (installedVersion) this.setState(installedVersion, 'downloaded');
-      this.setState(version, 'installed');
+      if (installedVersion)
+        this.setState(installedVersion, InstallState.downloaded);
+      this.setState(version, InstallState.installed);
     }
 
     delete this.installing;

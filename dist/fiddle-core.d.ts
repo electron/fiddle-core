@@ -129,7 +129,13 @@ export declare class Installer extends EventEmitter {
  * See {@link Installer.state} to get this value.
  * See Installer.on('state-changed') to watch for state changes.
  */
-export declare type InstallState = 'missing' | 'downloading' | 'downloaded' | 'installing' | 'installed';
+export declare enum InstallState {
+    missing = 'missing',
+    downloading = 'downloading',
+    downloaded = 'downloaded',
+    installing = 'installing',
+    installed = 'installed',
+}
 
 export declare interface InstallStateEvent {
     version: string;
