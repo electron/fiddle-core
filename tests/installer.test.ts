@@ -3,13 +3,20 @@ import * as os from 'os';
 import * as path from 'path';
 import nock, { Scope } from 'nock';
 
-import { InstallStateEvent, Installer, Paths } from '../src/index';
+import {
+  InstallStateEvent,
+  Installer,
+  Paths,
+  InstallState,
+} from '../src/index';
 
 describe('Installer', () => {
   let tmpdir: string;
   let paths: Partial<Paths>;
   let nockScope: Scope;
   let installer: Installer;
+  const { missing, downloading, downloaded, installing, installed } =
+    InstallState;
   const version12 = '12.0.15' as const;
   const version13 = '13.1.7' as const;
   const version = version13;
@@ -65,7 +72,7 @@ describe('Installer', () => {
     const func = () => installer.remove(version);
     const { events } = await listenWhile(installer, func);
 
-    expect(installer.state(version)).toBe('missing');
+    expect(installer.state(version)).toBe(missing);
 
     return { events };
   }
@@ -77,7 +84,7 @@ describe('Installer', () => {
     };
 
     // Version is already downloaded and present in local
-    if (installer.state(version) !== 'missing') {
+    if (installer.state(version) !== missing) {
       isDownloaded = true;
     }
     const func = () => installer.install(version, { progressCallback });
@@ -85,7 +92,7 @@ describe('Installer', () => {
     const exec = result as string;
 
     expect(isDownloaded).toBe(true);
-    expect(installer.state(version)).toBe('installed');
+    expect(installer.state(version)).toBe(installed);
     expect(installer.installedVersion).toBe(version);
 
     return { events, exec };
@@ -98,7 +105,7 @@ describe('Installer', () => {
     };
 
     // Version is already downloaded and present in local
-    if (installer.state(version) !== 'missing') {
+    if (installer.state(version) !== missing) {
       isDownloaded = true;
     }
     const func = () =>
@@ -110,7 +117,7 @@ describe('Installer', () => {
 
     expect(isDownloaded).toBe(true);
     expect(fs.existsSync(zipfile)).toBe(true);
-    expect(installer.state(version)).toBe('downloaded');
+    expect(installer.state(version)).toBe(downloaded);
 
     return { events, zipfile };
   }
@@ -134,13 +141,13 @@ describe('Installer', () => {
   describe('ensureDownloaded()', () => {
     it('downloads the version if needed', async () => {
       // setup: version is not installed
-      expect(installer.state(version)).toBe('missing');
+      expect(installer.state(version)).toBe(missing);
 
       // test that the zipfile was downloaded
       const { events } = await doDownload(installer, version);
       expect(events).toStrictEqual([
-        { version, state: 'downloading' },
-        { version, state: 'downloaded' },
+        { version, state: downloading },
+        { version, state: downloaded },
       ]);
     });
 
@@ -163,12 +170,12 @@ describe('Installer', () => {
       await doDownload(installer, version);
 
       const { events } = await doRemove(installer, version);
-      expect(events).toStrictEqual([{ version, state: 'missing' }]);
+      expect(events).toStrictEqual([{ version, state: missing }]);
     });
 
     it('does nothing if the version is missing', async () => {
       // setup: version is not installed
-      expect(installer.state(version)).toBe('missing');
+      expect(installer.state(version)).toBe(missing);
 
       const { events } = await doRemove(installer, version);
       expect(events).toStrictEqual([]);
@@ -179,7 +186,7 @@ describe('Installer', () => {
       await doInstall(installer, version);
 
       const { events } = await doRemove(installer, version);
-      expect(events).toStrictEqual([{ version, state: 'missing' }]);
+      expect(events).toStrictEqual([{ version, state: missing }]);
       expect(installer.installedVersion).toBe(undefined);
     });
   });
@@ -187,27 +194,27 @@ describe('Installer', () => {
   describe('install()', () => {
     it('downloads a version if necessary', async () => {
       // setup: version is not downloaded
-      expect(installer.state(version)).toBe('missing');
+      expect(installer.state(version)).toBe(missing);
       expect(installer.installedVersion).toBe(undefined);
 
       const { events } = await doInstall(installer, version);
       expect(events).toStrictEqual([
-        { version, state: 'downloading' },
-        { version, state: 'downloaded' },
-        { version, state: 'installing' },
-        { version, state: 'installed' },
+        { version, state: downloading },
+        { version, state: downloaded },
+        { version, state: installing },
+        { version, state: installed },
       ]);
     });
 
     it('unzips a version if necessary', async () => {
       // setup: version is downloaded but not installed
       await doDownload(installer, version);
-      expect(installer.state(version)).toBe('downloaded');
+      expect(installer.state(version)).toBe(downloaded);
 
       const { events } = await doInstall(installer, version);
       expect(events).toStrictEqual([
-        { version, state: 'installing' },
-        { version, state: 'installed' },
+        { version, state: installing },
+        { version, state: installed },
       ]);
     });
 
@@ -224,11 +231,11 @@ describe('Installer', () => {
       const { events } = await doInstall(installer, version13);
 
       expect(events).toStrictEqual([
-        { version: version13, state: 'downloading' },
-        { version: version13, state: 'downloaded' },
-        { version: version13, state: 'installing' },
-        { version: version12, state: 'downloaded' },
-        { version: version13, state: 'installed' },
+        { version: version13, state: downloading },
+        { version: version13, state: downloaded },
+        { version: version13, state: installing },
+        { version: version12, state: downloaded },
+        { version: version13, state: installed },
       ]);
     });
   });
@@ -248,16 +255,16 @@ describe('Installer', () => {
   describe('state()', () => {
     it("returns 'installed' if the version is installed", async () => {
       await doInstall(installer, version);
-      expect(installer.state(version)).toBe('installed');
+      expect(installer.state(version)).toBe(installed);
     });
 
     it("returns 'downloaded' if the version is downloaded", async () => {
       await doDownload(installer, version);
-      expect(installer.state(version)).toBe('downloaded');
+      expect(installer.state(version)).toBe(downloaded);
     });
 
     it("returns 'missing' if the version is not downloaded", () => {
-      expect(installer.state(version)).toBe('missing');
+      expect(installer.state(version)).toBe(missing);
     });
   });
 });
