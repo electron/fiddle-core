@@ -114,9 +114,9 @@ export class Installer extends EventEmitter {
       // no current version
     }
 
-    if (this.installing) {
-      this.setState(this.installing, InstallState.installing);
-    }
+    this.installing.forEach((version) => {
+      this.setState(version, InstallState.installing);
+    });
 
     // already downloaded...
     const str = `^electron-v(.*)-${process.platform}-${process.arch}.zip$`;
@@ -274,8 +274,8 @@ export class Installer extends EventEmitter {
     return promise;
   }
 
-  /** the currently-installing version, if any */
-  private installing: string | undefined;
+  /** keep a track of all currently installing versions */
+  private installing = new Set<string>();
 
   public async install(
     version: string,
@@ -283,10 +283,14 @@ export class Installer extends EventEmitter {
   ): Promise<string> {
     const d = debug(`fiddle-core:Installer:${version}:install`);
     const { electronInstall } = this.paths;
+    const isVersionInstalling = this.installing.has(version);
     const electronExec = Installer.getExecPath(electronInstall);
 
-    if (this.installing) throw new Error(`Currently installing "${version}"`);
-    this.installing = version;
+    if (isVersionInstalling) {
+      throw new Error(`Currently installing "${version}"`);
+    }
+
+    this.installing.add(version);
 
     // see if the current version (if any) is already `version`
     const { installedVersion } = this;
@@ -313,7 +317,7 @@ export class Installer extends EventEmitter {
       this.setState(version, InstallState.installed);
     }
 
-    delete this.installing;
+    this.installing.delete(version);
 
     // return the full path to the electron executable
     d(inspect({ electronExec, version }));
