@@ -47,6 +47,11 @@ export declare interface Mirrors {
     electronNightlyMirror: string;
 }
 
+export declare interface ElectronBinary {
+    path: string;
+    alreadyExtracted: boolean;
+}
+
 interface InstallerParams {
     progressCallback: (progress: ProgressObject) => void;
     mirror: Mirrors;
@@ -118,7 +123,7 @@ export declare class Installer extends EventEmitter {
     private ensureDownloadedImpl;
     /** map of version string to currently-running active Promise */
     private downloading;
-    ensureDownloaded(version: string, opts?: Partial<InstallerParams>): Promise<string>;
+    ensureDownloaded(version: string, opts?: Partial<InstallerParams>): Promise<ElectronBinary>;
     /** the currently-installing version, if any */
     private installing;
     install(version: string, opts?: Partial<InstallerParams>): Promise<string>;

@@ -1,5 +1,10 @@
 import { DefaultPaths, Paths } from './paths';
-import { Installer, InstallState, InstallStateEvent } from './installer';
+import {
+  Installer,
+  InstallState,
+  InstallStateEvent,
+  ElectronBinary,
+} from './installer';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { BisectResult, Runner, RunnerOptions, TestResult } from './runner';
 import {
@@ -16,6 +21,7 @@ export {
   BaseVersions,
   BisectResult,
   DefaultPaths,
+  ElectronBinary,
   ElectronVersions,
   Fiddle,
   FiddleFactory,

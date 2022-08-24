@@ -1,9 +1,11 @@
+import extract from 'extract-zip';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import nock, { Scope } from 'nock';
 
 import {
+  ElectronBinary,
   InstallStateEvent,
   Installer,
   Paths,
@@ -20,6 +22,7 @@ describe('Installer', () => {
   const version12 = '12.0.15' as const;
   const version13 = '13.1.7' as const;
   const version = version13;
+  const fixture = (name: string) => path.join(__dirname, 'fixtures', name);
 
   beforeEach(async () => {
     tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
@@ -29,7 +32,6 @@ describe('Installer', () => {
     };
     installer = new Installer(paths);
 
-    const fixture = (name: string) => path.join(__dirname, 'fixtures', name);
     nock.disableNetConnect();
     nockScope = nock('https://github.com:443');
     nockScope
@@ -113,13 +115,27 @@ describe('Installer', () => {
         progressCallback,
       });
     const { events, result } = await listenWhile(installer, func);
-    const zipfile = result as string;
+    const binaryConfig = result as ElectronBinary;
+    const { path: zipfile } = binaryConfig;
 
     expect(isDownloaded).toBe(true);
     expect(fs.existsSync(zipfile)).toBe(true);
     expect(installer.state(version)).toBe(downloaded);
 
-    return { events, zipfile };
+    return { events, binaryConfig };
+  }
+
+  async function unZipBinary(): Promise<string> {
+    const extractDir = path.join(tmpdir, 'downloads', version);
+    fs.mkdirSync(path.join(tmpdir, 'downloads', version), {
+      recursive: true,
+    });
+
+    await extract(fixture('electron-v13.1.7.zip'), {
+      dir: extractDir,
+    });
+
+    return extractDir;
   }
 
   // tests
@@ -144,23 +160,51 @@ describe('Installer', () => {
       expect(installer.state(version)).toBe(missing);
 
       // test that the zipfile was downloaded
-      const { events } = await doDownload(installer, version);
+      const { events, binaryConfig } = await doDownload(installer, version);
       expect(events).toStrictEqual([
         { version, state: downloading },
         { version, state: downloaded },
       ]);
+      expect(binaryConfig).toHaveProperty('alreadyExtracted', false);
     });
 
     it('does nothing if the version is already downloaded', async () => {
       // setup: version is already installed
-      const { zipfile: zip1 } = await doDownload(installer, version);
+      const { binaryConfig: config1 } = await doDownload(installer, version);
+      const { path: zip1 } = config1;
       const { ctimeMs } = await fs.stat(zip1);
 
       // test that ensureDownloaded() did nothing:
-      const { events, zipfile: zip2 } = await doDownload(installer, version);
+      const { events, binaryConfig: config2 } = await doDownload(
+        installer,
+        version,
+      );
+      const { path: zip2 } = config2;
+
       expect(zip2).toEqual(zip1);
       expect((await fs.stat(zip2)).ctimeMs).toEqual(ctimeMs);
       expect(events).toStrictEqual([]);
+      expect(config1).toStrictEqual({
+        path: config2.path,
+        alreadyExtracted: false,
+      });
+    });
+
+    it('makes use of the preinstalled electron versions', async () => {
+      const extractDir = await unZipBinary();
+      const {
+        binaryConfig: { path: zipFile },
+      } = await doDownload(installer, version);
+      // Purposely remove the downloaded zip file
+      fs.removeSync(zipFile);
+
+      const { binaryConfig } = await doDownload(installer, version);
+
+      expect(binaryConfig).toStrictEqual({
+        path: extractDir,
+        alreadyExtracted: true,
+      });
+      expect(installer.state(version)).toBe(downloaded);
     });
   });
 
@@ -188,6 +232,21 @@ describe('Installer', () => {
       const { events } = await doRemove(installer, version);
       expect(events).toStrictEqual([{ version, state: missing }]);
       expect(installer.installedVersion).toBe(undefined);
+    });
+
+    it('removes the preinstalled electron versions', async () => {
+      const extractDir = await unZipBinary();
+      const {
+        binaryConfig: { path: zipFile },
+      } = await doDownload(installer, version);
+      // Purposely remove the downloaded zip file
+      fs.removeSync(zipFile);
+      expect(installer.state(version)).toBe(downloaded);
+
+      const { events } = await doRemove(installer, version);
+
+      expect(fs.existsSync(extractDir)).toBe(false);
+      expect(events).toStrictEqual([{ version, state: missing }]);
     });
   });
 
@@ -238,6 +297,27 @@ describe('Installer', () => {
         { version: version13, state: installed },
       ]);
     });
+
+    it('installs the already extracted electron version', async () => {
+      await unZipBinary();
+      const {
+        binaryConfig: { path: zipFile },
+      } = await doDownload(installer, version);
+
+      // Purposely remove the downloaded zip file
+      fs.removeSync(zipFile);
+      expect(installer.state(version)).toBe(downloaded);
+      const { events } = await doInstall(installer, version);
+      const installedVersion = fs.readFileSync(
+        path.join(path.join(tmpdir, 'install', 'version')),
+        'utf-8',
+      );
+      expect(events).toStrictEqual([
+        { version: '13.1.7', state: 'installing' },
+        { version: '13.1.7', state: 'installed' },
+      ]);
+      expect(installedVersion).toBe(version);
+    });
   });
 
   describe('installedVersion', () => {
@@ -265,6 +345,19 @@ describe('Installer', () => {
 
     it("returns 'missing' if the version is not downloaded", () => {
       expect(installer.state(version)).toBe(missing);
+    });
+
+    it("returns 'downloaded' if the version is kept extracted", async () => {
+      expect(installer.state(version)).toBe(missing);
+      await unZipBinary();
+      const {
+        binaryConfig: { path: zipFile },
+      } = await doDownload(installer, version);
+      // Purposely remove the downloaded zip file
+      fs.removeSync(zipFile);
+      await doDownload(installer, version);
+
+      expect(installer.state(version)).toBe(downloaded);
     });
   });
 });

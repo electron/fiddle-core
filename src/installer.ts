@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import semver from 'semver';
 import debug from 'debug';
 import extract from 'extract-zip';
 import { EventEmitter } from 'events';
@@ -35,6 +36,11 @@ export interface InstallStateEvent {
 export interface Mirrors {
   electronMirror: string;
   electronNightlyMirror: string;
+}
+
+export interface ElectronBinary {
+  path: string;
+  alreadyExtracted: boolean; // to check if it's kept as zipped or not
 }
 
 interface InstallerParams {
@@ -124,7 +130,23 @@ export class Installer extends EventEmitter {
     try {
       for (const file of fs.readdirSync(this.paths.electronDownloads)) {
         const match = reg.exec(file);
-        if (match) this.setState(match[1], InstallState.downloaded);
+        if (match) {
+          this.setState(match[1], InstallState.downloaded);
+        } else {
+          // Case when the download path already has the unzipped electron version
+          const versionFile = path.join(
+            this.paths.electronDownloads,
+            file,
+            'version',
+          );
+
+          if (fs.existsSync(versionFile)) {
+            const version = fs.readFileSync(versionFile, 'utf8');
+            if (semver.valid(version)) {
+              this.setState(version, InstallState.downloaded);
+            }
+          }
+        }
       }
     } catch {
       // no download directory yet
@@ -174,7 +196,11 @@ export class Installer extends EventEmitter {
       this.paths.electronDownloads,
       getZipName(version),
     );
+    // Or, maybe the version was already installed and kept in file system
+    const preInstalledPath = path.join(this.paths.electronDownloads, version);
+
     const isZipDeleted = await rerunner(zipPath, binaryCleaner);
+    const isPathDeleted = await rerunner(preInstalledPath, binaryCleaner);
 
     // maybe uninstall it
     if (this.installedVersion === version) {
@@ -187,7 +213,7 @@ export class Installer extends EventEmitter {
       isBinaryDeleted = true;
     }
 
-    if (isZipDeleted && isBinaryDeleted) {
+    if ((isZipDeleted || isPathDeleted) && isBinaryDeleted) {
       this.setState(version, InstallState.missing);
     } else {
       // Ideally the execution shouldn't reach this point
@@ -235,12 +261,23 @@ export class Installer extends EventEmitter {
   private async ensureDownloadedImpl(
     version: string,
     opts?: Partial<InstallerParams>,
-  ): Promise<string> {
+  ): Promise<ElectronBinary> {
     const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
     const { electronDownloads } = this.paths;
     const zipFile = path.join(electronDownloads, getZipName(version));
 
     const state = this.state(version);
+
+    if (state === InstallState.downloaded) {
+      const preInstalledPath = path.join(electronDownloads, version);
+      if (!fs.existsSync(zipFile) && fs.existsSync(preInstalledPath)) {
+        return {
+          path: preInstalledPath,
+          alreadyExtracted: true,
+        };
+      }
+    }
+
     if (state === InstallState.missing) {
       d(`"${zipFile}" does not exist; downloading now`);
       this.setState(version, InstallState.downloading);
@@ -253,16 +290,19 @@ export class Installer extends EventEmitter {
       d(`"${zipFile}" exists; no need to download`);
     }
 
-    return zipFile;
+    return {
+      path: zipFile,
+      alreadyExtracted: false,
+    };
   }
 
   /** map of version string to currently-running active Promise */
-  private downloading = new Map<string, Promise<string>>();
+  private downloading = new Map<string, Promise<ElectronBinary>>();
 
   public async ensureDownloaded(
     version: string,
     opts?: Partial<InstallerParams>,
-  ): Promise<string> {
+  ): Promise<ElectronBinary> {
     const { downloading: promises } = this;
     let promise = promises.get(version);
     if (promise) return promise;
@@ -297,24 +337,38 @@ export class Installer extends EventEmitter {
     if (installedVersion === version) {
       d(`already installed`);
     } else {
-      const zipFile = await this.ensureDownloaded(version, opts);
-      this.setState(version, InstallState.installing);
-      d(`installing from "${zipFile}"`);
-      await fs.emptyDir(electronInstall);
-      // FIXME(anyone) is there a less awful way to wrangle asar
-      // @ts-ignore: yes, I know noAsar isn't defined in process
-      const { noAsar } = process;
-      try {
-        // @ts-ignore: yes, I know noAsar isn't defined in process
-        process.noAsar = true;
-        await extract(zipFile, { dir: electronInstall });
-      } finally {
-        // @ts-ignore: yes, I know noAsar isn't defined in process
-        process.noAsar = noAsar; // eslint-disable-line
+      const { path: zipFile, alreadyExtracted } = await this.ensureDownloaded(
+        version,
+        opts,
+      );
+
+      // An unzipped version already exists at `electronDownload` path
+      if (alreadyExtracted) {
+        await this.installVersionImpl(version, zipFile, () => {
+          // Simply copy over the files from preinstalled version to `electronInstall`
+          // @ts-ignore
+          const { noAsar } = process;
+          // @ts-ignore
+          process.noAsar = true;
+          fs.copySync(zipFile, electronInstall);
+          // @ts-ignore
+          process.noAsar = noAsar; // eslint-disable-line
+        });
+      } else {
+        await this.installVersionImpl(version, zipFile, async () => {
+          // FIXME(anyone) is there a less awful way to wrangle asar
+          // @ts-ignore: yes, I know noAsar isn't defined in process
+          const { noAsar } = process;
+          try {
+            // @ts-ignore: yes, I know noAsar isn't defined in process
+            process.noAsar = true;
+            await extract(zipFile, { dir: electronInstall });
+          } finally {
+            // @ts-ignore: yes, I know noAsar isn't defined in process
+            process.noAsar = noAsar; // eslint-disable-line
+          }
+        });
       }
-      if (installedVersion)
-        this.setState(installedVersion, InstallState.downloaded);
-      this.setState(version, InstallState.installed);
     }
 
     this.installing.delete(version);
@@ -322,5 +376,31 @@ export class Installer extends EventEmitter {
     // return the full path to the electron executable
     d(inspect({ electronExec, version }));
     return electronExec;
+  }
+
+  private async installVersionImpl(
+    version: string,
+    zipFile: string,
+    installCallback: () => Promise<void> | void,
+  ): Promise<void> {
+    const {
+      paths: { electronInstall },
+      installedVersion,
+    } = this;
+    const d = debug(`fiddle-core:Installer:${version}:install`);
+
+    this.setState(version, InstallState.installing);
+    d(`installing from "${zipFile}"`);
+    await fs.emptyDir(electronInstall);
+
+    // Call the user defined callback which unzips/copies files content
+    if (installCallback) {
+      await installCallback();
+    }
+
+    if (installedVersion) {
+      this.setState(installedVersion, InstallState.downloaded);
+    }
+    this.setState(version, InstallState.installed);
   }
 }
