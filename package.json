@@ -6,6 +6,9 @@
   "name": "fiddle-core",
   "version": "0.0.2",
   "main": "lib/index.js",
+  "bin": {
+    "fiddle-core": "lib/index.js"
+  },
   "types": "dist/fiddle-core.d.ts",
   "files": [
     "dist/**/*"
