@@ -5,15 +5,17 @@ step-restore-cache: &step-restore-cache
       - v1-dependencies-{{ arch }}
 
 steps-test: &steps-test
-  - run: git config --global core.autocrlf input
-  - checkout
-  - *step-restore-cache
-  - run: yarn --frozen-lockfile --network-timeout 100000
-  - save_cache:
-      paths:
-        - node_modules
-      key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
-  - run: yarn lint && yarn test:ci
+  steps:
+    - run: git config --global core.autocrlf input
+    - checkout
+    - *step-restore-cache
+    - run: yarn --frozen-lockfile
+    - save_cache:
+        paths:
+          - node_modules
+        key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
+    - run: yarn test
+    - run: yarn build:docs
 
 version: 2.1
 orbs:
@@ -22,21 +24,20 @@ jobs:
   test-linux-14:
     docker:
       - image: cimg/node:14.20
-    steps: *steps-test
+    <<: *steps-test
   test-linux-16:
     docker:
       - image: cimg/node:16.17
-    steps: *steps-test
+    <<: *steps-test
   test-mac:
     macos:
       xcode: "13.0.0"
-    steps: *steps-test
+    <<: *steps-test
   test-windows:
     executor:
       name: win/vs2019
       shell: bash.exe
     steps:
-      <<: *steps-test
       - run:
           name: Swap node versions
           command: |
@@ -50,6 +51,8 @@ jobs:
 
             echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
             echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+    <<: *steps-test
+
   release:
     docker:
       - image: cimg/node:16.17
