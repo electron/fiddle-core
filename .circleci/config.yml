@@ -1,0 +1,79 @@
+step-restore-cache: &step-restore-cache
+  restore_cache:
+    keys:
+      - v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
+      - v1-dependencies-{{ arch }}
+
+steps-test: &steps-test
+  - run: git config --global core.autocrlf input
+  - checkout
+  - *step-restore-cache
+  - run: yarn --frozen-lockfile --network-timeout 100000
+  - save_cache:
+      paths:
+        - node_modules
+      key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
+  - run: yarn lint && yarn test:ci
+
+version: 2.1
+orbs:
+  win: circleci/windows@1.0.0
+jobs:
+  test-linux-14:
+    docker:
+      - image: cimg/node:14.20
+    steps: *steps-test
+  test-linux-16:
+    docker:
+      - image: cimg/node:16.17
+    steps: *steps-test
+  test-mac:
+    macos:
+      xcode: "13.0.0"
+    steps: *steps-test
+  test-windows:
+    executor:
+      name: win/vs2019
+      shell: bash.exe
+    steps:
+      <<: *steps-test
+      - run:
+          name: Swap node versions
+          command: |
+            set +e
+            wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+            nvm install v16
+            nvm alias default 16.17.1
+
+            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
+            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+  release:
+    docker:
+      - image: cimg/node:16.17
+    steps:
+      - checkout
+      - *step-restore-cache
+      - run: yarn
+      - run: npx semantic-release@19.0.5
+workflows:
+  version: 2
+  test_and_release:
+    # Run the test jobs first, then the release only when all the test jobs are successful
+    jobs:
+      - test-linux-14
+      - test-linux-16
+      - test-mac
+      - test-windows
+      - release:
+          requires:
+            - test-linux-14
+            - test-linux-16
+            - test-mac
+            - test-windows
+          filters:
+            branches:
+              only:
+                - main
