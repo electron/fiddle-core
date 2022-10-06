@@ -3,7 +3,7 @@
   "homepage": "https://github.com/electron/fiddle-core#readme",
   "author": "Charles Kerr <charles@charleskerr.com>",
   "license": "MIT",
-  "name": "fiddle-core",
+  "name": "@electron/fiddle-core",
   "version": "0.0.0-development",
   "main": "lib/index.js",
   "types": "dist/fiddle-core.d.ts",
