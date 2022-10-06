@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { DefaultPaths, Paths } from './paths';
 import {
   Installer,
