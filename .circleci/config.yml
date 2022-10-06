@@ -14,8 +14,8 @@ steps-test: &steps-test
         paths:
           - node_modules
         key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
-    - run: yarn test
-    - run: yarn build:docs
+    - run: yarn lint
+    - run: yarn test:ci
 
 version: 2.1
 orbs:
