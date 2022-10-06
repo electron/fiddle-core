@@ -1,7 +1,8 @@
 # Fiddle-Core
 
 [![CircleCI](https://circleci.com/gh/electron/fiddle-core.svg?style=svg)](https://circleci.com/gh/electron/fiddle-core)
-[![NPM](https://img.shields.io/npm/v/@electron/fiddle-core.svg?style=flat)]([https://npm.im/](https://npmjs.org/package/)@electron/fiddle-core)
+[![NPM](https://img.shields.io/npm/v/@electron/fiddle-core.svg?style=flat)](https://npmjs.org/package/@electron/fiddle-core)
+
 
 Run fiddles from anywhere, on any Electron release
 
