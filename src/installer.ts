@@ -346,26 +346,20 @@ export class Installer extends EventEmitter {
       if (alreadyExtracted) {
         await this.installVersionImpl(version, zipFile, () => {
           // Simply copy over the files from preinstalled version to `electronInstall`
-          // @ts-ignore
           const { noAsar } = process;
-          // @ts-ignore
           process.noAsar = true;
           fs.copySync(zipFile, electronInstall);
-          // @ts-ignore
-          process.noAsar = noAsar; // eslint-disable-line
+          process.noAsar = noAsar;
         });
       } else {
         await this.installVersionImpl(version, zipFile, async () => {
           // FIXME(anyone) is there a less awful way to wrangle asar
-          // @ts-ignore: yes, I know noAsar isn't defined in process
           const { noAsar } = process;
           try {
-            // @ts-ignore: yes, I know noAsar isn't defined in process
             process.noAsar = true;
             await extract(zipFile, { dir: electronInstall });
           } finally {
-            // @ts-ignore: yes, I know noAsar isn't defined in process
-            process.noAsar = noAsar; // eslint-disable-line
+            process.noAsar = noAsar;
           }
         });
       }
