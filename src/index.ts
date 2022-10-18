@@ -6,6 +6,7 @@ import {
   InstallState,
   InstallStateEvent,
   ElectronBinary,
+  ProgressObject,
 } from './installer';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
 import { BisectResult, Runner, RunnerOptions, TestResult } from './runner';
@@ -32,6 +33,7 @@ export {
   InstallStateEvent,
   Installer,
   Paths,
+  ProgressObject,
   Runner,
   RunnerOptions,
   SemOrStr,
