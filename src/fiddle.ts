@@ -45,7 +45,15 @@ export class FiddleFactory {
     const folder = path.join(this.fiddles, hashString(source));
     d({ source, folder });
     await fs.remove(folder);
+
+    // Disable asar in case any deps bundle Electron - ex. @electron/remote
+    // @ts-ignore
+    const { noAsar } = process;
+    // @ts-ignore
+    process.noAsar = true;
     await fs.copy(source, folder);
+    // @ts-ignore
+    process.noAsar = noAsar;
 
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
