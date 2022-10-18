@@ -53,7 +53,7 @@ export class FiddleFactory {
     process.noAsar = true;
     await fs.copy(source, folder);
     // @ts-ignore
-    process.noAsar = noAsar;
+    process.noAsar = noAsar; // eslint-disable-line
 
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
