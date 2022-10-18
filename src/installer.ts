@@ -13,7 +13,7 @@ function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
 
-type ProgressObject = { percent: number };
+export type ProgressObject = { percent: number };
 
 /**
  * The state of a current Electron version.
