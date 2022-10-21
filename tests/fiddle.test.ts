@@ -93,7 +93,15 @@ describe('FiddleFactory', () => {
       expect(fiddle).toBe(fiddleIn);
     });
 
-    it.todo('reads fiddles from git repositories');
+    it('reads fiddles from git repositories', async () => {
+      const repo = 'https://github.com/electron/electron-quick-start.git';
+      const fiddle = await fiddleFactory.create(repo);
+      expect(fiddle).toBeTruthy();
+      expect(fs.existsSync(fiddle!.mainPath)).toBe(true);
+      expect(path.basename(fiddle!.mainPath)).toBe('main.js');
+      expect(path.dirname(path.dirname(fiddle!.mainPath))).toBe(fiddleDir);
+    });
+
     it.todo('refreshes the cache if given a previously-cached git repository');
 
     it('returns undefined for unknown input', async () => {

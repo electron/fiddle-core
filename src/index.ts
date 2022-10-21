@@ -19,6 +19,7 @@ import {
   compareVersions,
 } from './versions';
 import { runFromCommandLine } from './command-line';
+import { setGithubToken, removeGithubToken } from './utils/env';
 
 export {
   BaseVersions,
@@ -41,6 +42,8 @@ export {
   TestResult,
   Versions,
   compareVersions,
+  setGithubToken,
+  removeGithubToken,
   runFromCommandLine,
 };
 
