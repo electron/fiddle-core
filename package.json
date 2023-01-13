@@ -5,6 +5,7 @@
   "license": "MIT",
   "name": "@electron/fiddle-core",
   "version": "0.0.0-development",
+  "description": "Run fiddles from anywhere, on any Electron release",
   "main": "dist/index.js",
   "bin": {
     "fiddle-core": "dist/index.js"
