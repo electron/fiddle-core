@@ -130,7 +130,7 @@ await installer.install('11.4.10', {
 ### Versions
 
 ```ts
-import { Versions } from '@electron/fiddle-core';
+import { ElectronVersions } from '@electron/fiddle-core';
 
 // - querying specific versions
 const elves = await ElectronVersions.create();
