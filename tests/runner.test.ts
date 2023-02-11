@@ -1,8 +1,16 @@
-/* eslint @typescript-eslint/no-unsafe-assignment:0 */
-
-import { Runner, TestResult } from '../src/index';
+import {
+  Installer,
+  FiddleFactory,
+  Paths,
+  Runner,
+  TestResult,
+} from '../src/index';
 import child_process from 'child_process';
 import { EventEmitter } from 'events';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as os from 'os';
+import { Writable } from 'stream';
 
 jest.mock('child_process');
 
@@ -28,6 +36,22 @@ interface FakeRunnerOpts {
   } | null;
 }
 
+let tmpdir: string;
+let versionsCache: string;
+
+beforeAll(async () => {
+  tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+
+  // Copy the releases.json fixture over to populate the versions cache
+  versionsCache = path.join(tmpdir, 'versions.json');
+  const filename = path.join(__dirname, 'fixtures', 'releases.json');
+  await fs.outputJSON(versionsCache, await fs.readJson(filename));
+});
+
+afterAll(() => {
+  fs.removeSync(tmpdir);
+});
+
 async function createFakeRunner({
   pathToExecutable = '/path/to/electron/executable',
   generatedFiddle = {
@@ -38,10 +62,13 @@ async function createFakeRunner({
   const runner = await Runner.create({
     installer: {
       install: jest.fn().mockResolvedValue(pathToExecutable),
-    } as any,
+    } as Pick<Installer, 'install'> as Installer,
     fiddleFactory: {
       create: jest.fn().mockResolvedValue(generatedFiddle),
-    } as any,
+    } as Pick<FiddleFactory, 'create'> as FiddleFactory,
+    paths: {
+      versionsCache,
+    },
   });
 
   return runner;
@@ -83,7 +110,7 @@ describe('Runner', () => {
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
         out: {
           write: mockStdout,
-        } as any,
+        } as Pick<Writable, 'write'> as Writable,
       });
       expect(child_process.spawn).toHaveBeenCalledTimes(1);
       expect(child_process.spawn).toHaveBeenCalledWith(
@@ -92,7 +119,7 @@ describe('Runner', () => {
         {
           args: [],
           headless: false,
-          out: expect.any(Object),
+          out: expect.any(Object) as Writable,
           showConfig: true,
         },
       );
@@ -116,7 +143,7 @@ describe('Runner', () => {
           headless: true,
           out: {
             write: mockStdout,
-          } as any,
+          } as Pick<Writable, 'write'> as Writable,
         });
         expect(child_process.spawn).toHaveBeenCalledTimes(1);
         expect(child_process.spawn).toHaveBeenCalledWith(
@@ -129,7 +156,7 @@ describe('Runner', () => {
           {
             args: [],
             headless: true,
-            out: expect.any(Object),
+            out: expect.any(Object) as Writable,
             showConfig: true,
           },
         );
@@ -143,9 +170,9 @@ describe('Runner', () => {
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
         out: {
           write: mockStdout,
-        },
+        } as Pick<Writable, 'write'> as Writable,
         showConfig: false,
-      } as any);
+      });
 
       expect(mockStdout).not.toHaveBeenCalled();
     });
