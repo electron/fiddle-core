@@ -43,7 +43,7 @@ export interface ElectronBinary {
   alreadyExtracted: boolean; // to check if it's kept as zipped or not
 }
 
-interface InstallerParams {
+export interface InstallerParams {
   progressCallback: (progress: ProgressObject) => void;
   mirror: Mirrors;
 }
