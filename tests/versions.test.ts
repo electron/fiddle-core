@@ -257,6 +257,14 @@ describe('ElectronVersions', () => {
       expect(versions.length).toBe(2);
     });
 
+    it('has no versions with a missing cache and failed fetch', async () => {
+      const scope = nockScope.get('/releases.json').replyWithError('Error');
+      await fs.remove(versionsCache);
+      const { versions } = await ElectronVersions.create({ versionsCache });
+      expect(scope.isDone());
+      expect(versions.length).toBe(0);
+    });
+
     it('fetches with a stale cache', async () => {
       const scope = nockScope.get('/releases.json')
         .reply(
@@ -281,6 +289,15 @@ describe('ElectronVersions', () => {
       const { versions } = await ElectronVersions.create({ versionsCache });
       expect(scope.isDone());
       expect(versions.length).toBe(3);
+    });
+
+    it('uses stale cache when fetch fails', async () => {
+      const scope = nockScope.get('/releases.json').replyWithError('Error');
+      const staleCacheMtime = (Date.now()/1000) - (5 * 60 * 60);
+      await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
+      const { versions } = await ElectronVersions.create({ versionsCache });
+      expect(scope.isDone());
+      expect(versions.length).toBe(1061);
     });
   });
 
