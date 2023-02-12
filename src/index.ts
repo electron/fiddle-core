@@ -21,6 +21,7 @@ import {
 import {
   BaseVersions,
   ElectronVersions,
+  ElectronVersionsCreateOptions,
   SemOrStr,
   SemVer,
   Versions,
@@ -34,6 +35,7 @@ export {
   DefaultPaths,
   ElectronBinary,
   ElectronVersions,
+  ElectronVersionsCreateOptions,
   Fiddle,
   FiddleFactory,
   FiddleSource,

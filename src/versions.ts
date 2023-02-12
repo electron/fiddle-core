@@ -44,6 +44,11 @@ export interface Versions {
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 }
 
+export interface ElectronVersionsCreateOptions {
+  /** Initial versions to use if there is no cache. When provided, no initial fetch is done */
+  initialVersions?: unknown;
+}
+
 export function compareVersions(a: SemVer, b: SemVer): number {
   const l = a.compareMain(b);
   if (l) return l;
@@ -217,6 +222,7 @@ export class ElectronVersions extends BaseVersions {
 
   public static async create(
     paths: Partial<Paths> = {},
+    options: ElectronVersionsCreateOptions = {},
   ): Promise<ElectronVersions> {
     const d = debug('fiddle-core:ElectronVersions:create');
     const { versionsCache } = { ...DefaultPaths, ...paths };
@@ -230,6 +236,8 @@ export class ElectronVersions extends BaseVersions {
       staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
     } catch (err) {
       d('cache file missing or cannot be read', err);
+      // Use initialVersions instead if provided, and don't fetch
+      versions = options.initialVersions;
     }
 
     if (!versions || staleCache) {

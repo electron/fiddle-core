@@ -64,7 +64,7 @@ export interface ElectronBinary {
 // @public
 export class ElectronVersions extends BaseVersions {
     // (undocumented)
-    static create(paths?: Partial<Paths>): Promise<ElectronVersions>;
+    static create(paths?: Partial<Paths>, options?: ElectronVersionsCreateOptions): Promise<ElectronVersions>;
     // (undocumented)
     fetch(): Promise<void>;
     // (undocumented)
@@ -87,6 +87,11 @@ export class ElectronVersions extends BaseVersions {
     get supportedMajors(): number[];
     // (undocumented)
     get versions(): SemVer[];
+}
+
+// @public (undocumented)
+export interface ElectronVersionsCreateOptions {
+    initialVersions?: unknown;
 }
 
 // @public (undocumented)
