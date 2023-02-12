@@ -16,6 +16,8 @@ import { Writable } from 'stream';
 export class BaseVersions implements Versions {
     constructor(versions: unknown);
     // (undocumented)
+    getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined;
+    // (undocumented)
     inMajor(major: number): SemVer[];
     // (undocumented)
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
@@ -192,6 +194,20 @@ export type ProgressObject = {
 };
 
 // @public (undocumented)
+export interface ReleaseInfo {
+    chrome: string;
+    date: string;
+    files: Array<string>;
+    modules: string;
+    node: string;
+    openssl: string;
+    uv: string;
+    v8: string;
+    version: string;
+    zlib: string;
+}
+
+// @public (undocumented)
 export function runFromCommandLine(argv: string[]): Promise<void>;
 
 // @public (undocumented)
@@ -241,6 +257,8 @@ export interface TestResult {
 
 // @public
 export interface Versions {
+    // (undocumented)
+    getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
     // (undocumented)
     inMajor(major: number): SemVer[];
     // (undocumented)

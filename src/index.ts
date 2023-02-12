@@ -21,6 +21,7 @@ import {
 import {
   BaseVersions,
   ElectronVersions,
+  ReleaseInfo,
   SemOrStr,
   SemVer,
   Versions,
@@ -44,6 +45,7 @@ export {
   Mirrors,
   Paths,
   ProgressObject,
+  ReleaseInfo,
   Runner,
   RunnerOptions,
   RunnerSpawnOptions,
