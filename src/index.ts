@@ -2,14 +2,22 @@
 
 import { DefaultPaths, Paths } from './paths';
 import {
+  ElectronBinary,
   Installer,
+  InstallerParams,
   InstallState,
   InstallStateEvent,
-  ElectronBinary,
+  Mirrors,
   ProgressObject,
 } from './installer';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
-import { BisectResult, Runner, RunnerOptions, TestResult } from './runner';
+import {
+  BisectResult,
+  Runner,
+  RunnerOptions,
+  RunnerSpawnOptions,
+  TestResult,
+} from './runner';
 import {
   BaseVersions,
   ElectronVersions,
@@ -32,10 +40,13 @@ export {
   InstallState,
   InstallStateEvent,
   Installer,
+  InstallerParams,
+  Mirrors,
   Paths,
   ProgressObject,
   Runner,
   RunnerOptions,
+  RunnerSpawnOptions,
   SemOrStr,
   SemVer,
   TestResult,
