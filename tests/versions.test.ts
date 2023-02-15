@@ -1,8 +1,10 @@
 import * as fs from 'fs-extra';
+import nock, { Scope } from 'nock';
+import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
 
-import { BaseVersions } from '../src/versions';
+import { BaseVersions, ElectronVersions } from '../src/versions';
 
 describe('BaseVersions', () => {
   let testVersions: BaseVersions;
@@ -189,6 +191,128 @@ describe('BaseVersions', () => {
       expect(sems.map((sem) => sem.version)).toEqual(expected);
       sems = testVersions.inRange(last, first);
       expect(sems.map((sem) => sem.version)).toEqual(expected);
+    });
+  });
+});
+
+describe('ElectronVersions', () => {
+  let nockScope: Scope;
+  let tmpdir: string;
+  let versionsCache: string;
+  const releasesFixturePath = path.join(__dirname, 'fixtures', 'releases.json');
+
+  beforeAll(async () => {
+    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+  });
+
+  beforeEach(async () => {
+    // Copy the releases.json fixture over to populate the versions cache
+    versionsCache = path.join(tmpdir, 'versions.json');
+    await fs.outputJSON(versionsCache, await fs.readJson(releasesFixturePath));
+
+    nock.disableNetConnect();
+    nockScope = nock('https://releases.electronjs.org');
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+    nock.enableNetConnect();
+  });
+
+  afterAll(() => {
+    fs.removeSync(tmpdir);
+  });
+
+  describe('.create', () => {
+    it('does not fetch with a fresh cache', async () => {
+      await fs.outputJSON(versionsCache, [
+        {
+          version: '0.23.0',
+        },
+      ]);
+      expect(nockScope.isDone());  // No mocks
+      const { versions } = await ElectronVersions.create({ versionsCache });
+      expect(versions.length).toBe(1);
+    });
+
+    it('fetches with a missing cache', async () => {
+      const scope = nockScope.get('/releases.json')
+        .reply(
+          200,
+          JSON.stringify([
+            {
+              version: '0.23.0',
+            },
+            {
+              version: '0.23.1',
+            },
+          ]),
+          {
+            'Content-Type': 'application/json',
+          }
+        );
+      await fs.remove(versionsCache);
+      const { versions } = await ElectronVersions.create({ versionsCache });
+      expect(scope.isDone());
+      expect(versions.length).toBe(2);
+    });
+
+    it('fetches with a stale cache', async () => {
+      const scope = nockScope.get('/releases.json')
+        .reply(
+          200,
+          JSON.stringify([
+            {
+              version: '0.23.0',
+            },
+            {
+              version: '0.23.1',
+            },
+            {
+              version: '0.23.2',
+            },
+          ]),
+          {
+            'Content-Type': 'application/json',
+          }
+        );
+      const staleCacheMtime = (Date.now()/1000) - (5 * 60 * 60);
+      await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
+      const { versions } = await ElectronVersions.create({ versionsCache });
+      expect(scope.isDone());
+      expect(versions.length).toBe(3);
+    });
+  });
+
+  describe('.fetch', () => {
+    it('updates the cache', async () => {
+      const electronVersions = await ElectronVersions.create({ versionsCache });
+      expect(electronVersions.versions.length).toBe(1061);
+
+      const scope = nockScope.get('/releases.json')
+        .reply(
+          200,
+          JSON.stringify([
+            {
+              version: '0.23.0',
+            },
+            {
+              version: '0.23.1',
+            },
+            {
+              version: '0.23.2',
+            },
+            {
+              version: '0.23.3',
+            },
+          ]),
+          {
+            'Content-Type': 'application/json',
+          }
+        );
+      await electronVersions.fetch();
+      expect(scope.isDone());
+      expect(electronVersions.versions.length).toBe(4);
     });
   });
 });
