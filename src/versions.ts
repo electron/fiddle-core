@@ -222,16 +222,17 @@ export class ElectronVersions extends BaseVersions {
     const { versionsCache } = { ...DefaultPaths, ...paths };
 
     let versions: unknown;
+    let staleCache = false;
     const now = Date.now();
     try {
       const st = await fs.stat(versionsCache);
-      if (ElectronVersions.isCacheFresh(st.mtimeMs, now))
-        versions = (await fs.readJson(versionsCache)) as unknown;
+      versions = await fs.readJson(versionsCache);
+      staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
     } catch (err) {
       d('cache file missing or cannot be read', err);
     }
 
-    if (!versions) {
+    if (!versions || staleCache) {
       try {
         versions = await ElectronVersions.fetchVersions(versionsCache);
       } catch (err) {
@@ -257,7 +258,7 @@ export class ElectronVersions extends BaseVersions {
     }
   }
 
-  // upate the cache iff it's too old
+  // update the cache iff it's too old
   private async keepFresh(): Promise<void> {
     if (!ElectronVersions.isCacheFresh(this.mtimeMs, Date.now())) {
       await this.fetch();
