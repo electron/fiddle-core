@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc -b",
     "docs": "api-extractor run --local",
+    "docs:ci": "api-extractor run",
     "lint": "run-p lint:eslint lint:prettier",
     "lint:fix": "run-p lint:eslint:fix lint:prettier:fix",
     "lint:eslint": "eslint \"./src/**/*.ts\"",
