@@ -1,10 +1,4 @@
-import {
-  Installer,
-  FiddleFactory,
-  Paths,
-  Runner,
-  TestResult,
-} from '../src/index';
+import { Installer, FiddleFactory, Runner, TestResult } from '../src/index';
 import child_process from 'child_process';
 import { EventEmitter } from 'events';
 import * as fs from 'fs-extra';
