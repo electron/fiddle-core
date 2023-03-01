@@ -306,6 +306,46 @@ describe('ElectronVersions', () => {
       expect(scope.isDone());
       expect(versions.length).toBe(1061);
     });
+
+    it('uses options.initialVersions if missing cache', async () => {
+      await fs.remove(versionsCache);
+      expect(nockScope.isDone()); // No mocks
+      const initialVersions = [
+        {
+          version: '0.23.0',
+        },
+        {
+          version: '0.23.1',
+        },
+      ];
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { initialVersions },
+      );
+      expect(versions.length).toBe(2);
+    });
+
+    it('does not use options.initialVersions if cache available', async () => {
+      await fs.outputJSON(versionsCache, [
+        {
+          version: '0.23.0',
+        },
+      ]);
+      expect(nockScope.isDone()); // No mocks
+      const initialVersions = [
+        {
+          version: '0.23.0',
+        },
+        {
+          version: '0.23.1',
+        },
+      ];
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { initialVersions },
+      );
+      expect(versions.length).toBe(1);
+    });
   });
 
   describe('.fetch', () => {
