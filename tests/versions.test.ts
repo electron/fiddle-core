@@ -19,8 +19,12 @@ describe('BaseVersions', () => {
     it('returns the expected versions', () => {
       const { versions } = testVersions;
       expect(versions.length).toBe(1061);
-      expect(versions).toContainEqual(expect.objectContaining({ version: '13.0.1' }));
-      expect(versions).not.toContainEqual(expect.objectContaining({ version: '13.0.2' }));
+      expect(versions).toContainEqual(
+        expect.objectContaining({ version: '13.0.1' }),
+      );
+      expect(versions).not.toContainEqual(
+        expect.objectContaining({ version: '13.0.2' }),
+      );
     });
   });
 
@@ -32,7 +36,9 @@ describe('BaseVersions', () => {
 
     it('returns stable majors in sorted order', () => {
       const { stableMajors } = testVersions;
-      expect(stableMajors).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+      expect(stableMajors).toEqual([
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+      ]);
     });
 
     it('returns supported majors in sorted order', () => {
@@ -67,7 +73,10 @@ describe('BaseVersions', () => {
       expect(range.shift()!.version).toBe('12.0.0');
       expect(range.pop()!.version).toBe('12.0.15');
 
-      range = testVersions.inRange(semver.parse('12.0.0')!, semver.parse('12.0.15')!);
+      range = testVersions.inRange(
+        semver.parse('12.0.0')!,
+        semver.parse('12.0.15')!,
+      );
       expect(range.length).toBe(16);
       expect(range.shift()!.version).toBe('12.0.0');
       expect(range.pop()!.version).toBe('12.0.15');
@@ -275,27 +284,26 @@ describe('ElectronVersions', () => {
           version: '0.23.0',
         },
       ]);
-      expect(nockScope.isDone());  // No mocks
+      expect(nockScope.isDone()); // No mocks
       const { versions } = await ElectronVersions.create({ versionsCache });
       expect(versions.length).toBe(1);
     });
 
     it('fetches with a missing cache', async () => {
-      const scope = nockScope.get('/releases.json')
-        .reply(
-          200,
-          JSON.stringify([
-            {
-              version: '0.23.0',
-            },
-            {
-              version: '0.23.1',
-            },
-          ]),
+      const scope = nockScope.get('/releases.json').reply(
+        200,
+        JSON.stringify([
           {
-            'Content-Type': 'application/json',
-          }
-        );
+            version: '0.23.0',
+          },
+          {
+            version: '0.23.1',
+          },
+        ]),
+        {
+          'Content-Type': 'application/json',
+        },
+      );
       await fs.remove(versionsCache);
       const { versions } = await ElectronVersions.create({ versionsCache });
       expect(scope.isDone());
@@ -311,25 +319,24 @@ describe('ElectronVersions', () => {
     });
 
     it('fetches with a stale cache', async () => {
-      const scope = nockScope.get('/releases.json')
-        .reply(
-          200,
-          JSON.stringify([
-            {
-              version: '0.23.0',
-            },
-            {
-              version: '0.23.1',
-            },
-            {
-              version: '0.23.2',
-            },
-          ]),
+      const scope = nockScope.get('/releases.json').reply(
+        200,
+        JSON.stringify([
           {
-            'Content-Type': 'application/json',
-          }
-        );
-      const staleCacheMtime = (Date.now()/1000) - (5 * 60 * 60);
+            version: '0.23.0',
+          },
+          {
+            version: '0.23.1',
+          },
+          {
+            version: '0.23.2',
+          },
+        ]),
+        {
+          'Content-Type': 'application/json',
+        },
+      );
+      const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
       await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
       const { versions } = await ElectronVersions.create({ versionsCache });
       expect(scope.isDone());
@@ -338,11 +345,51 @@ describe('ElectronVersions', () => {
 
     it('uses stale cache when fetch fails', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
-      const staleCacheMtime = (Date.now()/1000) - (5 * 60 * 60);
+      const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
       await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
       const { versions } = await ElectronVersions.create({ versionsCache });
       expect(scope.isDone());
       expect(versions.length).toBe(1061);
+    });
+
+    it('uses options.initialVersions if missing cache', async () => {
+      await fs.remove(versionsCache);
+      expect(nockScope.isDone()); // No mocks
+      const initialVersions = [
+        {
+          version: '0.23.0',
+        },
+        {
+          version: '0.23.1',
+        },
+      ];
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { initialVersions },
+      );
+      expect(versions.length).toBe(2);
+    });
+
+    it('does not use options.initialVersions if cache available', async () => {
+      await fs.outputJSON(versionsCache, [
+        {
+          version: '0.23.0',
+        },
+      ]);
+      expect(nockScope.isDone()); // No mocks
+      const initialVersions = [
+        {
+          version: '0.23.0',
+        },
+        {
+          version: '0.23.1',
+        },
+      ];
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { initialVersions },
+      );
+      expect(versions.length).toBe(1);
     });
   });
 
@@ -351,27 +398,26 @@ describe('ElectronVersions', () => {
       const electronVersions = await ElectronVersions.create({ versionsCache });
       expect(electronVersions.versions.length).toBe(1061);
 
-      const scope = nockScope.get('/releases.json')
-        .reply(
-          200,
-          JSON.stringify([
-            {
-              version: '0.23.0',
-            },
-            {
-              version: '0.23.1',
-            },
-            {
-              version: '0.23.2',
-            },
-            {
-              version: '0.23.3',
-            },
-          ]),
+      const scope = nockScope.get('/releases.json').reply(
+        200,
+        JSON.stringify([
           {
-            'Content-Type': 'application/json',
-          }
-        );
+            version: '0.23.0',
+          },
+          {
+            version: '0.23.1',
+          },
+          {
+            version: '0.23.2',
+          },
+          {
+            version: '0.23.3',
+          },
+        ]),
+        {
+          'Content-Type': 'application/json',
+        },
+      );
       await electronVersions.fetch();
       expect(scope.isDone());
       expect(electronVersions.versions.length).toBe(4);

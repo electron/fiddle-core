@@ -1,74 +1,106 @@
-step-restore-cache: &step-restore-cache
-  restore_cache:
-    keys:
-      - v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
-      - v1-dependencies-{{ arch }}
-
-steps-test: &steps-test
-  steps:
-    - run: git config --global core.autocrlf input
-    - checkout
-    - *step-restore-cache
-    - run: yarn --frozen-lockfile
-    - save_cache:
-        paths:
-          - node_modules
-        key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
-    - run: yarn lint
-    - run: yarn test:ci
-
 version: 2.1
+
 orbs:
-  win: circleci/windows@5.0.0
   cfa: continuousauth/npm@1.0.2
+  node: circleci/node@5.1.0
+  win: circleci/windows@5.0.0
+
+commands:
+  install:
+    parameters:
+      node-version:
+        description: Node.js version to install
+        type: string
+    steps:
+      - run: git config --global core.autocrlf input
+      - node/install:
+          node-version: << parameters.node-version >>
+      - run: nvm use << parameters.node-version >>
+      # Can't get yarn installed on Windows with the circleci/node orb, so use npx yarn for commands
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
+            - v1-dependencies-{{ arch }}
+      - run: npx yarn install --frozen-lockfile
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
 
 jobs:
-  test-linux-14:
+  test-linux:
     docker:
-      - image: cimg/node:14.20
-    <<: *steps-test
-  test-linux-16:
-    docker:
-      - image: cimg/node:16.17
-    <<: *steps-test
+      - image: cimg/base:stable
+    parameters:
+      node-version:
+        description: Node.js version to install
+        type: string
+    steps:
+      - install:
+          node-version: << parameters.node-version >>
+      - run: npx yarn test:ci
   test-mac:
     macos:
-      xcode: '13.0.0'
-    <<: *steps-test
+      xcode: "13.0.0"
+    parameters:
+      node-version:
+        description: Node.js version to install
+        type: string
+    steps:
+      - install:
+          node-version: << parameters.node-version >>
+      - run: npx yarn test:ci
   test-windows:
     executor:
-      name: win/server-2019
+      # Need win/default otherwise the nvm-windows version is too old (has bugs)
+      name: win/default
       shell: bash.exe
+    parameters:
+      node-version:
+        description: Node.js version to install
+        type: string
     steps:
-      - run:
-          name: Swap node versions
-          command: |
-            set +e
-            wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | bash
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-            nvm install v16
-            nvm alias default 16.17.1
-
-            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
-            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
-    <<: *steps-test
+      - install:
+          node-version: << parameters.node-version >>
+      - run: npx yarn test:ci
 
 workflows:
   test_and_release:
     # Run the test jobs first, then the release only when all the test jobs are successful
     jobs:
-      - test-linux-14
-      - test-linux-16
-      - test-mac
-      - test-windows
+      - test-linux:
+          matrix:
+            parameters:
+              node-version:
+                - 18.14.0
+                - 16.19.0
+                - 14.19.0
+      - test-mac:
+          matrix:
+            parameters:
+              node-version:
+                - 18.14.0
+                - 16.19.0
+                - 14.19.0
+      - test-windows:
+          matrix:
+            parameters:
+              node-version:
+                - 18.14.0
+                - 16.19.0
+                - 14.19.0
       - cfa/release:
           requires:
-            - test-linux-14
-            - test-linux-16
-            - test-mac
-            - test-windows
+            - test-linux-18.14.0
+            - test-linux-16.19.0
+            - test-linux-14.19.0
+            - test-mac-18.14.0
+            - test-mac-16.19.0
+            - test-mac-14.19.0
+            - test-windows-18.14.0
+            - test-windows-16.19.0
+            - test-windows-14.19.0
           filters:
             branches:
               only:
