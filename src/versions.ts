@@ -9,6 +9,29 @@ import { DefaultPaths, Paths } from './paths';
 
 export type SemOrStr = SemVer | string;
 
+export interface ReleaseInfo {
+  /** Electron version */
+  version: string;
+  /** Release date */
+  date: string;
+  /** Node.js version */
+  node: string;
+  /** V8 version */
+  v8: string;
+  /** uv version */
+  uv: string;
+  /** zlib version */
+  zlib: string;
+  /** OpenSSL version */
+  openssl: string;
+  /** Node.js modules version */
+  modules: string;
+  /** Chromium version */
+  chrome: string;
+  /** Files included in the release */
+  files: Array<string>;
+}
+
 /**
  * Interface for an object that manages a list of Electron releases.
  *
@@ -42,6 +65,9 @@ export interface Versions {
 
   /** @returns all versions in a range, inclusive. Sorted in branch order. */
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
+
+  /** @returns {@link ReleaseInfo} iff `version` is a release that this object knows about */
+  getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
 }
 
 export interface ElectronVersionsCreateOptions {
@@ -65,6 +91,33 @@ export function compareVersions(a: SemVer, b: SemVer): number {
 
 function hasVersion(val: unknown): val is { version: unknown } {
   return typeof val === 'object' && val !== null && 'version' in val;
+}
+
+function isReleaseInfo(val: unknown): val is ReleaseInfo {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'version' in val &&
+    typeof (val as { version: unknown }).version === 'string' &&
+    'date' in val &&
+    typeof (val as { date: unknown }).date === 'string' &&
+    'node' in val &&
+    typeof (val as { node: unknown }).node === 'string' &&
+    'v8' in val &&
+    typeof (val as { v8: unknown }).v8 === 'string' &&
+    'uv' in val &&
+    typeof (val as { uv: unknown }).uv === 'string' &&
+    'zlib' in val &&
+    typeof (val as { zlib: unknown }).zlib === 'string' &&
+    'openssl' in val &&
+    typeof (val as { openssl: unknown }).openssl === 'string' &&
+    'modules' in val &&
+    typeof (val as { modules: unknown }).modules === 'string' &&
+    'chrome' in val &&
+    typeof (val as { chrome: unknown }).chrome === 'string' &&
+    'files' in val &&
+    isArrayOfStrings((val as { files: unknown }).files)
+  );
 }
 
 function isArrayOfVersionObjects(
@@ -92,12 +145,34 @@ const NUM_SUPPORTED_MAJORS = 4;
  */
 export class BaseVersions implements Versions {
   private readonly map = new Map<string, SemVer>();
+  private readonly releaseInfo = new Map<string, ReleaseInfo>();
 
   protected setVersions(val: unknown): void {
+    // release info doesn't need to be in sorted order
+    this.releaseInfo.clear();
+
     // build the array
     let parsed: Array<SemVer | null> = [];
     if (isArrayOfVersionObjects(val)) {
       parsed = val.map(({ version }) => semverParse(version));
+
+      // build release info
+      for (const entry of val) {
+        if (isReleaseInfo(entry)) {
+          this.releaseInfo.set(entry.version, {
+            version: entry.version,
+            date: entry.date,
+            node: entry.node,
+            v8: entry.v8,
+            uv: entry.uv,
+            zlib: entry.zlib,
+            openssl: entry.openssl,
+            modules: entry.modules,
+            chrome: entry.chrome,
+            files: [...entry.files],
+          });
+        }
+      }
     } else if (isArrayOfStrings(val)) {
       parsed = val.map((version) => semverParse(version));
     } else {
@@ -187,6 +262,10 @@ export class BaseVersions implements Versions {
     let last = versions.findIndex((ver) => ver.version === b);
     if (first > last) [first, last] = [last, first];
     return versions.slice(first, last + 1);
+  }
+
+  public getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined {
+    return this.releaseInfo.get(typeof ver === 'string' ? ver : ver.version);
   }
 }
 

@@ -202,6 +202,51 @@ describe('BaseVersions', () => {
       expect(sems.map((sem) => sem.version)).toEqual(expected);
     });
   });
+
+  describe('getReleaseInfo()', () => {
+    it('returns release info for a known version', () => {
+      const version = '16.0.0-nightly.20210726';
+      const releaseInfo = testVersions.getReleaseInfo(version);
+      expect(releaseInfo).not.toBe(undefined);
+      expect(releaseInfo).toMatchObject({
+        version,
+        chrome: '93.0.4566.0',
+        date: '2021-07-26',
+        files: [
+          'darwin-x64',
+          'darwin-x64-symbols',
+          'linux-ia32',
+          'linux-ia32-symbols',
+          'linux-x64',
+          'linux-x64-symbols',
+          'win32-ia32',
+          'win32-ia32-symbols',
+          'win32-x64',
+          'win32-x64-symbols',
+        ],
+        modules: '89',
+        node: '16.5.0',
+        openssl: '1.1.1',
+        uv: '1.41.0',
+        v8: '9.3.278-electron.0',
+        zlib: '1.2.11',
+      });
+    });
+
+    it('does not return release info for an unknown version', () => {
+      const releaseInfo = testVersions.getReleaseInfo('0.0.0');
+      expect(releaseInfo).toBe(undefined);
+    });
+
+    it('does not return release info if partial info', () => {
+      const version = '16.0.0-nightly.20210726';
+      const partialVersions = new BaseVersions([
+        { version, node: '16.5.0', openssl: '1.1.1' },
+      ]);
+      const releaseInfo = partialVersions.getReleaseInfo(version);
+      expect(releaseInfo).toBe(undefined);
+    });
+  });
 });
 
 describe('ElectronVersions', () => {
