@@ -98,25 +98,25 @@ function isReleaseInfo(val: unknown): val is ReleaseInfo {
     typeof val === 'object' &&
     val !== null &&
     'version' in val &&
-    typeof (val as { version: unknown }).version === 'string' &&
+    typeof val.version === 'string' &&
     'date' in val &&
-    typeof (val as { date: unknown }).date === 'string' &&
+    typeof val.date === 'string' &&
     'node' in val &&
-    typeof (val as { node: unknown }).node === 'string' &&
+    typeof val.node === 'string' &&
     'v8' in val &&
-    typeof (val as { v8: unknown }).v8 === 'string' &&
+    typeof val.v8 === 'string' &&
     'uv' in val &&
-    typeof (val as { uv: unknown }).uv === 'string' &&
+    typeof val.uv === 'string' &&
     'zlib' in val &&
-    typeof (val as { zlib: unknown }).zlib === 'string' &&
+    typeof val.zlib === 'string' &&
     'openssl' in val &&
-    typeof (val as { openssl: unknown }).openssl === 'string' &&
+    typeof val.openssl === 'string' &&
     'modules' in val &&
-    typeof (val as { modules: unknown }).modules === 'string' &&
+    typeof val.modules === 'string' &&
     'chrome' in val &&
-    typeof (val as { chrome: unknown }).chrome === 'string' &&
+    typeof val.chrome === 'string' &&
     'files' in val &&
-    isArrayOfStrings((val as { files: unknown }).files)
+    isArrayOfStrings(val.files)
   );
 }
 
