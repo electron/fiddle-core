@@ -35,6 +35,7 @@ describe('Installer', () => {
     nock.disableNetConnect();
     nockScope = nock('https://github.com:443');
     nockScope
+      .persist()
       .get(/electron-v13.1.7-.*\.zip$/)
       .replyWithFile(200, fixture('electron-v13.1.7.zip'), {
         'Content-Type': 'application/zip',
@@ -205,6 +206,23 @@ describe('Installer', () => {
         alreadyExtracted: true,
       });
       expect(installer.state(version)).toBe(downloaded);
+    });
+
+    it('downloads the version if the zip file is missing', async () => {
+      const {
+        binaryConfig: { path: zipFile },
+      } = await doDownload(installer, version);
+      // Purposely remove the downloaded zip file
+      fs.removeSync(zipFile);
+      expect(installer.state(version)).toBe(downloaded);
+
+      // test that the zipfile was downloaded
+      const { events, binaryConfig } = await doDownload(installer, version);
+      expect(events).toStrictEqual([
+        { version, state: downloading },
+        { version, state: downloaded },
+      ]);
+      expect(binaryConfig).toHaveProperty('alreadyExtracted', false);
     });
   });
 

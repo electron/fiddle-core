@@ -265,12 +265,13 @@ export class Installer extends EventEmitter {
     const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
     const { electronDownloads } = this.paths;
     const zipFile = path.join(electronDownloads, getZipName(version));
+    const zipFileExists = fs.existsSync(zipFile);
 
     const state = this.state(version);
 
     if (state === InstallState.downloaded) {
       const preInstalledPath = path.join(electronDownloads, version);
-      if (!fs.existsSync(zipFile) && fs.existsSync(preInstalledPath)) {
+      if (!zipFileExists && fs.existsSync(preInstalledPath)) {
         return {
           path: preInstalledPath,
           alreadyExtracted: true,
@@ -278,7 +279,7 @@ export class Installer extends EventEmitter {
       }
     }
 
-    if (state === InstallState.missing) {
+    if (state === InstallState.missing || !zipFileExists) {
       d(`"${zipFile}" does not exist; downloading now`);
       this.setState(version, InstallState.downloading);
       const tempFile = await this.download(version, opts);
