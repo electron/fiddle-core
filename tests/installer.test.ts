@@ -318,6 +318,33 @@ describe('Installer', () => {
       ]);
       expect(installedVersion).toBe(version);
     });
+
+    it('throws error if already installing', async () => {
+      const promise = doInstall(installer, version);
+      try {
+        await expect(doInstall(installer, version)).rejects.toThrow(
+          'Currently installing',
+        );
+      } finally {
+        await promise;
+      }
+    });
+
+    it('leaves a valid state after an error', async () => {
+      const spy = jest
+        .spyOn(installer, 'ensureDownloaded')
+        .mockRejectedValueOnce(new Error('Download failed'));
+      await expect(doInstall(installer, version)).rejects.toThrow(Error);
+      spy.mockRestore();
+
+      const { events } = await doInstall(installer, version);
+      expect(events).toStrictEqual([
+        { version, state: downloading },
+        { version, state: downloaded },
+        { version, state: installing },
+        { version, state: installed },
+      ]);
+    });
   });
 
   describe('installedVersion', () => {
