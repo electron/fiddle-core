@@ -332,40 +332,42 @@ export class Installer extends EventEmitter {
 
     this.installing.add(version);
 
-    // see if the current version (if any) is already `version`
-    const { installedVersion } = this;
-    if (installedVersion === version) {
-      d(`already installed`);
-    } else {
-      const { path: zipFile, alreadyExtracted } = await this.ensureDownloaded(
-        version,
-        opts,
-      );
-
-      // An unzipped version already exists at `electronDownload` path
-      if (alreadyExtracted) {
-        await this.installVersionImpl(version, zipFile, () => {
-          // Simply copy over the files from preinstalled version to `electronInstall`
-          const { noAsar } = process;
-          process.noAsar = true;
-          fs.copySync(zipFile, electronInstall);
-          process.noAsar = noAsar;
-        });
+    try {
+      // see if the current version (if any) is already `version`
+      const { installedVersion } = this;
+      if (installedVersion === version) {
+        d(`already installed`);
       } else {
-        await this.installVersionImpl(version, zipFile, async () => {
-          // FIXME(anyone) is there a less awful way to wrangle asar
-          const { noAsar } = process;
-          try {
-            process.noAsar = true;
-            await extract(zipFile, { dir: electronInstall });
-          } finally {
-            process.noAsar = noAsar;
-          }
-        });
-      }
-    }
+        const { path: zipFile, alreadyExtracted } = await this.ensureDownloaded(
+          version,
+          opts,
+        );
 
-    this.installing.delete(version);
+        // An unzipped version already exists at `electronDownload` path
+        if (alreadyExtracted) {
+          await this.installVersionImpl(version, zipFile, () => {
+            // Simply copy over the files from preinstalled version to `electronInstall`
+            const { noAsar } = process;
+            process.noAsar = true;
+            fs.copySync(zipFile, electronInstall);
+            process.noAsar = noAsar;
+          });
+        } else {
+          await this.installVersionImpl(version, zipFile, async () => {
+            // FIXME(anyone) is there a less awful way to wrangle asar
+            const { noAsar } = process;
+            try {
+              process.noAsar = true;
+              await extract(zipFile, { dir: electronInstall });
+            } finally {
+              process.noAsar = noAsar;
+            }
+          });
+        }
+      }
+    } finally {
+      this.installing.delete(version);
+    }
 
     // return the full path to the electron executable
     d(inspect({ electronExec, version }));
