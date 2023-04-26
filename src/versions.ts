@@ -133,7 +133,7 @@ function isArrayOfStrings(val: unknown): val is Array<string> {
   return Array.isArray(val) && val.every((item) => typeof item === 'string');
 }
 
-const NUM_SUPPORTED_MAJORS = 4;
+const NUM_SUPPORTED_MAJORS = 3;
 
 /**
  * Implementation of {@link Versions} that does everything except self-populate.
