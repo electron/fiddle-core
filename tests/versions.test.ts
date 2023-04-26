@@ -43,12 +43,12 @@ describe('BaseVersions', () => {
 
     it('returns supported majors in sorted order', () => {
       const { supportedMajors } = testVersions;
-      expect(supportedMajors).toEqual([10, 11, 12, 13]);
+      expect(supportedMajors).toEqual([11, 12, 13]);
     });
 
     it('returns obsolete majors in sorted order', () => {
       const { obsoleteMajors } = testVersions;
-      expect(obsoleteMajors).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(obsoleteMajors).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     });
   });
 
