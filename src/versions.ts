@@ -73,6 +73,9 @@ export interface Versions {
 export interface ElectronVersionsCreateOptions {
   /** Initial versions to use if there is no cache. When provided, no initial fetch is done */
   initialVersions?: unknown;
+
+  /** Ignore the cache even if it exists and is fresh */
+  ignoreCache?: boolean;
 }
 
 export function compareVersions(a: SemVer, b: SemVer): number {
@@ -306,17 +309,19 @@ export class ElectronVersions extends BaseVersions {
     const d = debug('fiddle-core:ElectronVersions:create');
     const { versionsCache } = { ...DefaultPaths, ...paths };
 
-    let versions: unknown;
+    // Use initialVersions instead if provided, and don't fetch if so
+    let versions = options.initialVersions;
     let staleCache = false;
     const now = Date.now();
-    try {
-      const st = await fs.stat(versionsCache);
-      versions = await fs.readJson(versionsCache);
-      staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
-    } catch (err) {
-      d('cache file missing or cannot be read', err);
-      // Use initialVersions instead if provided, and don't fetch
-      versions = options.initialVersions;
+
+    if (!options.ignoreCache) {
+      try {
+        const st = await fs.stat(versionsCache);
+        versions = await fs.readJson(versionsCache);
+        staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
+      } catch (err) {
+        d('cache file missing or cannot be read', err);
+      }
     }
 
     if (!versions || staleCache) {
