@@ -93,6 +93,7 @@ export class ElectronVersions extends BaseVersions {
 
 // @public (undocumented)
 export interface ElectronVersionsCreateOptions {
+    ignoreCache?: boolean;
     initialVersions?: unknown;
 }
 

@@ -391,6 +391,59 @@ describe('ElectronVersions', () => {
       );
       expect(versions.length).toBe(1);
     });
+
+    it('does not use cache if options.ignoreCache is true', async () => {
+      await fs.outputJSON(versionsCache, [
+        {
+          version: '0.23.0',
+        },
+      ]);
+      const scope = nockScope.get('/releases.json').reply(
+        200,
+        JSON.stringify([
+          {
+            version: '0.23.0',
+          },
+          {
+            version: '0.23.1',
+          },
+          {
+            version: '0.23.2',
+          },
+        ]),
+        {
+          'Content-Type': 'application/json',
+        },
+      );
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { ignoreCache: true },
+      );
+      expect(scope.isDone());
+      expect(versions.length).toBe(3);
+    });
+
+    it('uses options.initialVersions if cache available but options.ignoreCache is true', async () => {
+      await fs.outputJSON(versionsCache, [
+        {
+          version: '0.23.0',
+        },
+      ]);
+      expect(nockScope.isDone()); // No mocks
+      const initialVersions = [
+        {
+          version: '0.23.0',
+        },
+        {
+          version: '0.23.1',
+        },
+      ];
+      const { versions } = await ElectronVersions.create(
+        { versionsCache },
+        { initialVersions, ignoreCache: true },
+      );
+      expect(versions.length).toBe(2);
+    });
   });
 
   describe('.fetch', () => {
