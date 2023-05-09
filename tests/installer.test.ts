@@ -14,7 +14,7 @@ import {
 
 describe('Installer', () => {
   let tmpdir: string;
-  let paths: Partial<Paths>;
+  let paths: Pick<Paths, 'electronDownloads' | 'electronInstall'>;
   let nockScope: Scope;
   let installer: Installer;
   const { missing, downloading, downloaded, installing, installed } =
@@ -94,9 +94,14 @@ describe('Installer', () => {
     const { events, result } = await listenWhile(installer, func);
     const exec = result as string;
 
+    const installedVersion = fs
+      .readFileSync(path.join(paths.electronInstall, 'version'), 'utf-8')
+      .trim();
+
     expect(isDownloaded).toBe(true);
     expect(installer.state(version)).toBe(installed);
     expect(installer.installedVersion).toBe(version);
+    expect(installedVersion).toBe(version);
 
     return { events, exec };
   }
@@ -127,10 +132,8 @@ describe('Installer', () => {
   }
 
   async function unZipBinary(): Promise<string> {
-    const extractDir = path.join(tmpdir, 'downloads', version);
-    fs.mkdirSync(path.join(tmpdir, 'downloads', version), {
-      recursive: true,
-    });
+    const extractDir = path.join(paths.electronDownloads, version);
+    fs.mkdirSync(extractDir, { recursive: true });
 
     await extract(fixture('electron-v13.1.7.zip'), {
       dir: extractDir,
@@ -326,15 +329,10 @@ describe('Installer', () => {
       fs.removeSync(zipFile);
       expect(installer.state(version)).toBe(downloaded);
       const { events } = await doInstall(installer, version);
-      const installedVersion = fs.readFileSync(
-        path.join(path.join(tmpdir, 'install', 'version')),
-        'utf-8',
-      );
       expect(events).toStrictEqual([
         { version: '13.1.7', state: 'installing' },
         { version: '13.1.7', state: 'installed' },
       ]);
-      expect(installedVersion).toBe(version);
     });
 
     it('throws error if already installing', async () => {
