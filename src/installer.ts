@@ -114,7 +114,7 @@ export class Installer extends EventEmitter {
     // currently installed...
     try {
       const versionFile = path.join(this.paths.electronInstall, 'version');
-      const version = fs.readFileSync(versionFile, 'utf8');
+      const version = fs.readFileSync(versionFile, 'utf8').trim();
       this.setState(version, InstallState.installed);
     } catch {
       // no current version
@@ -141,7 +141,7 @@ export class Installer extends EventEmitter {
           );
 
           if (fs.existsSync(versionFile)) {
-            const version = fs.readFileSync(versionFile, 'utf8');
+            const version = fs.readFileSync(versionFile, 'utf8').trim();
             if (semver.valid(version)) {
               this.setState(version, InstallState.downloaded);
             }
