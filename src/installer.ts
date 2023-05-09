@@ -4,6 +4,7 @@ import semver from 'semver';
 import debug from 'debug';
 import extract from 'extract-zip';
 import { EventEmitter } from 'events';
+import { rimraf } from 'rimraf';
 import { download as electronDownload } from '@electron/get';
 import { inspect } from 'util';
 
@@ -339,27 +340,27 @@ export class Installer extends EventEmitter {
       if (installedVersion === version) {
         d(`already installed`);
       } else {
-        const { path: zipFile, alreadyExtracted } = await this.ensureDownloaded(
+        const { path: source, alreadyExtracted } = await this.ensureDownloaded(
           version,
           opts,
         );
 
         // An unzipped version already exists at `electronDownload` path
         if (alreadyExtracted) {
-          await this.installVersionImpl(version, zipFile, () => {
+          await this.installVersionImpl(version, source, () => {
             // Simply copy over the files from preinstalled version to `electronInstall`
             const { noAsar } = process;
             process.noAsar = true;
-            fs.copySync(zipFile, electronInstall);
+            fs.copySync(source, electronInstall);
             process.noAsar = noAsar;
           });
         } else {
-          await this.installVersionImpl(version, zipFile, async () => {
+          await this.installVersionImpl(version, source, async () => {
             // FIXME(anyone) is there a less awful way to wrangle asar
             const { noAsar } = process;
             try {
               process.noAsar = true;
-              await extract(zipFile, { dir: electronInstall });
+              await extract(source, { dir: electronInstall });
             } finally {
               process.noAsar = noAsar;
             }
@@ -377,7 +378,7 @@ export class Installer extends EventEmitter {
 
   private async installVersionImpl(
     version: string,
-    zipFile: string,
+    source: string,
     installCallback: () => Promise<void> | void,
   ): Promise<void> {
     const {
@@ -387,8 +388,8 @@ export class Installer extends EventEmitter {
     const d = debug(`fiddle-core:Installer:${version}:install`);
 
     this.setState(version, InstallState.installing);
-    d(`installing from "${zipFile}"`);
-    await fs.emptyDir(electronInstall);
+    d(`installing from "${source}"`);
+    await rimraf(electronInstall);
 
     // Call the user defined callback which unzips/copies files content
     if (installCallback) {
