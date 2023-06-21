@@ -15,7 +15,7 @@ import { Writable } from 'stream';
 // @public
 export class BaseVersions implements Versions {
     constructor(versions: unknown);
-    /** @returns {@link ReleaseInfo} iff `version` is a release that this object knows about */
+    /** @returns {@link ReleaseInfo} `version` is a release that this object knows about */
     getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined;
     /** @returns all versions matching that major number.*/
     inMajor(major: number): SemVer[];
