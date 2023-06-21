@@ -15,29 +15,29 @@ import { Writable } from 'stream';
 // @public
 export class BaseVersions implements Versions {
     constructor(versions: unknown);
-    // (undocumented)
+    /** @returns {@link ReleaseInfo} iff `version` is a release that this object knows about */
     getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined;
-    // (undocumented)
+    /** @returns all versions matching that major number.*/
     inMajor(major: number): SemVer[];
-    // (undocumented)
+    /** @returns all versions in a range, inclusive. */
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
+    /** @returns true iff `version` is a release that this object knows about */
     isVersion(ver: SemOrStr): boolean;
-    // (undocumented)
+    /** @returns latest version */
     get latest(): SemVer | undefined;
-    // (undocumented)
+    /** @returns latest stable version */
     get latestStable(): SemVer | undefined;
-    // (undocumented)
+    /** @returns obsolete major versions */
     get obsoleteMajors(): number[];
-    // (undocumented)
+    /** @returns branches that only have prereleases */
     get prereleaseMajors(): number[];
-    // (undocumented)
+    
     protected setVersions(val: unknown): void;
-    // (undocumented)
+    /** @returns stable major versions */
     get stableMajors(): number[];
-    // (undocumented)
+    /** @returns  branches that have supported stable releases */
     get supportedMajors(): number[];
-    // (undocumented)
+    /** @returns  returns all versions */
     get versions(): SemVer[];
 }
 
