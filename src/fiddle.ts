@@ -12,12 +12,16 @@ function hashString(str: string): string {
   return md5sum.digest('hex');
 }
 
+/** This class represents a fiddle */
 export class Fiddle {
   constructor(
+    /** It serves as the entry point or the primary script file for the fiddle */
     public readonly mainPath: string, // /path/to/main.js
+    /** It represents the code */
     public readonly source: string,
   ) {}
 
+  /** This method deletes the fiddle from the system */
   public remove(): Promise<void> {
     return fs.remove(path.dirname(this.mainPath));
   }
@@ -31,13 +35,19 @@ export class Fiddle {
  */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
+/**
+ * This class is responsible for creating instances of the Fiddle class
+ * and it has methods to create a fiddle from various source
+ */
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
 
+  /** This method creates a Fiddle instance by fetching a GitHub Gist and cloning it into a temporary directory, */
   public async fromGist(gistId: string): Promise<Fiddle> {
     return this.fromRepo(`https://gist.github.com/${gistId}.git`);
   }
 
+  /** This method creates a Fiddle instance by making a temporary copy of the fiddle from a specified source */
   public async fromFolder(source: string): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromFolder');
 
@@ -54,6 +64,12 @@ export class FiddleFactory {
 
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
+
+  /**
+   * This method creates a Fiddle instance by cloning a Git repository into a temporary directory,
+   * checking out a specified branch (default: 'master'),
+   * and setting the main file path based on the cloned files.
+   */
 
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromRepo');
@@ -73,6 +89,11 @@ export class FiddleFactory {
 
     return new Fiddle(path.join(folder, 'main.js'), url);
   }
+
+  /**
+   * This method creates a Fiddle instance by saving a collection of filename-content pairs to a temporary directory
+   * and setting the main file path accordingly.
+   */
 
   public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromEntries');
@@ -95,6 +116,7 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }
 
+  /** This method determines the source type and calls the appropriate method to create the fiddle */
   public async create(src: FiddleSource): Promise<Fiddle | undefined> {
     if (src instanceof Fiddle) return src;
 

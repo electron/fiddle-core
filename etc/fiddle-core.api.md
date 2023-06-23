@@ -97,30 +97,23 @@ export interface ElectronVersionsCreateOptions {
     initialVersions?: unknown;
 }
 
-// @public (undocumented)
+// @public
 export class Fiddle {
-    constructor(mainPath: string, // /path/to/main.js
+    constructor(
+    mainPath: string, // /path/to/main.js
     source: string);
-    // (undocumented)
     readonly mainPath: string;
-    // (undocumented)
     remove(): Promise<void>;
-    // (undocumented)
     readonly source: string;
 }
 
-// @public (undocumented)
+// @public
 export class FiddleFactory {
     constructor(fiddles?: string);
-    // (undocumented)
     create(src: FiddleSource): Promise<Fiddle | undefined>;
-    // (undocumented)
     fromEntries(src: Iterable<[string, string]>): Promise<Fiddle>;
-    // (undocumented)
     fromFolder(source: string): Promise<Fiddle>;
-    // (undocumented)
     fromGist(gistId: string): Promise<Fiddle>;
-    // (undocumented)
     fromRepo(url: string, checkout?: string): Promise<Fiddle>;
 }
 
