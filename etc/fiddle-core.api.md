@@ -213,7 +213,7 @@ export interface ReleaseInfo {
     zlib: string;
 }
 
-// @public (undocumented)
+// @public
 export function runFromCommandLine(argv: string[]): Promise<void>;
 
 // @public (undocumented)
