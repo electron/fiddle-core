@@ -41,11 +41,9 @@ export class BaseVersions implements Versions {
     get versions(): SemVer[];
 }
 
-// @public (undocumented)
+// @public
 export interface BisectResult {
-    // (undocumented)
     range?: [string, string];
-    // (undocumented)
     status: 'bisect_succeeded' | 'test_error' | 'system_error';
 }
 
@@ -187,38 +185,29 @@ export interface ReleaseInfo {
 // @public
 export function runFromCommandLine(argv: string[]): Promise<void>;
 
-// @public (undocumented)
+// @public
 export class Runner {
-    // (undocumented)
     bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<BisectResult>;
-    // (undocumented)
     static create(opts?: {
         installer?: Installer;
         fiddleFactory?: FiddleFactory;
         paths?: Partial<Paths>;
         versions?: Versions;
     }): Promise<Runner>;
-    // (undocumented)
     static displayResult(result: TestResult): string;
-    // (undocumented)
     run(version: string | SemVer, fiddle: FiddleSource, opts?: RunnerSpawnOptions): Promise<TestResult>;
-    // (undocumented)
     spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<ChildProcess>;
 }
 
-// @public (undocumented)
+// @public
 export interface RunnerOptions {
-    // (undocumented)
     args?: string[];
-    // (undocumented)
     headless?: boolean;
-    // (undocumented)
     out?: Writable;
-    // (undocumented)
     showConfig?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
 // @public (undocumented)
@@ -226,9 +215,8 @@ export type SemOrStr = SemVer | string;
 
 export { SemVer }
 
-// @public (undocumented)
+// @public
 export interface TestResult {
-    // (undocumented)
     status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
 }
 
