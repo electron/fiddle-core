@@ -49,7 +49,7 @@ export interface InstallStateEvent {
 export interface Mirrors {
   /** The URL of the electron mirror */
   electronMirror: string;
-   /** The URL of the electron nightly mirror */
+  /** The URL of the electron nightly mirror */
   electronNightlyMirror: string;
 }
 
@@ -63,9 +63,9 @@ export interface ElectronBinary {
 
 /** Represents the parameters for an installer */
 export interface InstallerParams {
-   /** The callback function to receive progress updates */
+  /** The callback function to receive progress updates */
   progressCallback: (progress: ProgressObject) => void;
-   /** The mirrors to use for the installation */
+  /** The mirrors to use for the installation */
   mirror: Mirrors;
 }
 
