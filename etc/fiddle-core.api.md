@@ -55,11 +55,9 @@ export function compareVersions(a: SemVer, b: SemVer): number;
 // @public (undocumented)
 export const DefaultPaths: Paths;
 
-// @public (undocumented)
+// @public
 export interface ElectronBinary {
-    // (undocumented)
     alreadyExtracted: boolean;
-    // (undocumented)
     path: string;
 }
 
@@ -123,55 +121,39 @@ export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 // @public
 export class Installer extends EventEmitter {
     constructor(pathsIn?: Partial<Paths>);
-    // (undocumented)
     ensureDownloaded(version: string, opts?: Partial<InstallerParams>): Promise<ElectronBinary>;
-    // (undocumented)
     static execSubpath(platform?: string): string;
-    // (undocumented)
     static getExecPath(folder: string): string;
-    // (undocumented)
     install(version: string, opts?: Partial<InstallerParams>): Promise<string>;
     get installedVersion(): string | undefined;
     remove(version: string): Promise<void>;
-    // (undocumented)
     state(version: string): InstallState;
 }
 
-// @public (undocumented)
+// @public
 export interface InstallerParams {
-    // (undocumented)
     mirror: Mirrors;
-    // (undocumented)
     progressCallback: (progress: ProgressObject) => void;
 }
 
 // @public
 export enum InstallState {
-    // (undocumented)
     downloaded = "downloaded",
-    // (undocumented)
     downloading = "downloading",
-    // (undocumented)
     installed = "installed",
-    // (undocumented)
     installing = "installing",
-    // (undocumented)
     missing = "missing"
 }
 
-// @public (undocumented)
+// @public
 export interface InstallStateEvent {
-    // (undocumented)
     state: InstallState;
-    // (undocumented)
     version: string;
 }
 
-// @public (undocumented)
+// @public
 export interface Mirrors {
-    // (undocumented)
     electronMirror: string;
-    // (undocumented)
     electronNightlyMirror: string;
 }
 
@@ -187,7 +169,7 @@ export interface Paths {
     readonly versionsCache: string;
 }
 
-// @public (undocumented)
+// @public
 export type ProgressObject = {
     percent: number;
 };

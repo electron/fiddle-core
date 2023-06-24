@@ -14,6 +14,7 @@ function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
 
+/** This object is used to track progress in percent */
 export type ProgressObject = { percent: number };
 
 /**
@@ -22,30 +23,49 @@ export type ProgressObject = { percent: number };
  * See Installer.on('state-changed') to watch for state changes.
  */
 export enum InstallState {
+  /** This represent the missing state */
   missing = 'missing',
+  /** This represent the downloading state */
   downloading = 'downloading',
+  /** This represent the downloaded state */
   downloaded = 'downloaded',
+  /** This represent the installing state */
   installing = 'installing',
+  /** This represent the installed state */
   installed = 'installed',
 }
 
+/**
+ * Represents an event that indicates the installation state of something.
+ */
 export interface InstallStateEvent {
+  /** The version of the installation */
   version: string;
+  /** The state of the installation */
   state: InstallState;
 }
 
+/** Represents an object that holds information about electron mirrors */
 export interface Mirrors {
+  /** The URL of the electron mirror */
   electronMirror: string;
+   /** The URL of the electron nightly mirror */
   electronNightlyMirror: string;
 }
 
+/** Represents the configuration for an Electron binary */
 export interface ElectronBinary {
+  /** The path to the Electron binary */
   path: string;
+  /** Indicates whether the Electron binary is already extracted or not */
   alreadyExtracted: boolean; // to check if it's kept as zipped or not
 }
 
+/** Represents the parameters for an installer */
 export interface InstallerParams {
+   /** The callback function to receive progress updates */
   progressCallback: (progress: ProgressObject) => void;
+   /** The mirrors to use for the installation */
   mirror: Mirrors;
 }
 
@@ -71,6 +91,7 @@ export class Installer extends EventEmitter {
     this.rebuildStates();
   }
 
+  /** Executes the subpath based on the platform */
   public static execSubpath(platform: string = process.platform): string {
     switch (platform) {
       case 'darwin':
@@ -82,10 +103,12 @@ export class Installer extends EventEmitter {
     }
   }
 
+  /** Gets the executable path for a given folder */
   public static getExecPath(folder: string): string {
     return path.join(folder, Installer.execSubpath());
   }
 
+  /** Gets the installation state for a specific version */
   public state(version: string): InstallState {
     return this.stateMap.get(version) || InstallState.missing;
   }
@@ -301,6 +324,9 @@ export class Installer extends EventEmitter {
   /** map of version string to currently-running active Promise */
   private downloading = new Map<string, Promise<ElectronBinary>>();
 
+  /**
+   * Ensures that the specified version of Electron is downloaded and available.
+   */
   public async ensureDownloaded(
     version: string,
     opts?: Partial<InstallerParams>,
@@ -319,6 +345,7 @@ export class Installer extends EventEmitter {
   /** keep a track of all currently installing versions */
   private installing = new Set<string>();
 
+  /** Installs the specified version of Electron */
   public async install(
     version: string,
     opts?: Partial<InstallerParams>,
