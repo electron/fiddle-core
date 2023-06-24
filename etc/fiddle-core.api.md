@@ -52,7 +52,7 @@ export interface BisectResult {
 // @public (undocumented)
 export function compareVersions(a: SemVer, b: SemVer): number;
 
-// @public (undocumented)
+// @public
 export const DefaultPaths: Paths;
 
 // @public
@@ -157,15 +157,11 @@ export interface Mirrors {
     electronNightlyMirror: string;
 }
 
-// @public (undocumented)
+// @public
 export interface Paths {
-    // (undocumented)
     readonly electronDownloads: string;
-    // (undocumented)
     readonly electronInstall: string;
-    // (undocumented)
     readonly fiddles: string;
-    // (undocumented)
     readonly versionsCache: string;
 }
 
