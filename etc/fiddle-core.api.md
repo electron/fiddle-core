@@ -15,29 +15,17 @@ import { Writable } from 'stream';
 // @public
 export class BaseVersions implements Versions {
     constructor(versions: unknown);
-    // (undocumented)
     getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined;
-    // (undocumented)
     inMajor(major: number): SemVer[];
-    // (undocumented)
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
     isVersion(ver: SemOrStr): boolean;
-    // (undocumented)
     get latest(): SemVer | undefined;
-    // (undocumented)
     get latestStable(): SemVer | undefined;
-    // (undocumented)
     get obsoleteMajors(): number[];
-    // (undocumented)
     get prereleaseMajors(): number[];
-    // (undocumented)
     protected setVersions(val: unknown): void;
-    // (undocumented)
     get stableMajors(): number[];
-    // (undocumented)
     get supportedMajors(): number[];
-    // (undocumented)
     get versions(): SemVer[];
 }
 
@@ -47,7 +35,7 @@ export interface BisectResult {
     status: 'bisect_succeeded' | 'test_error' | 'system_error';
 }
 
-// @public (undocumented)
+// @public
 export function compareVersions(a: SemVer, b: SemVer): number;
 
 // @public
@@ -61,33 +49,21 @@ export interface ElectronBinary {
 
 // @public
 export class ElectronVersions extends BaseVersions {
-    // (undocumented)
     static create(paths?: Partial<Paths>, options?: ElectronVersionsCreateOptions): Promise<ElectronVersions>;
-    // (undocumented)
     fetch(): Promise<void>;
-    // (undocumented)
     inMajor(major: number): SemVer[];
-    // (undocumented)
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
     isVersion(ver: SemOrStr): boolean;
-    // (undocumented)
     get latest(): SemVer | undefined;
-    // (undocumented)
     get latestStable(): SemVer | undefined;
-    // (undocumented)
     get obsoleteMajors(): number[];
-    // (undocumented)
     get prereleaseMajors(): number[];
-    // (undocumented)
     get stableMajors(): number[];
-    // (undocumented)
     get supportedMajors(): number[];
-    // (undocumented)
     get versions(): SemVer[];
 }
 
-// @public (undocumented)
+// @public
 export interface ElectronVersionsCreateOptions {
     ignoreCache?: boolean;
     initialVersions?: unknown;
@@ -168,7 +144,7 @@ export type ProgressObject = {
     percent: number;
 };
 
-// @public (undocumented)
+// @public
 export interface ReleaseInfo {
     chrome: string;
     date: string;
@@ -210,7 +186,7 @@ export interface RunnerOptions {
 // @public
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
-// @public (undocumented)
+// @public
 export type SemOrStr = SemVer | string;
 
 export { SemVer }
@@ -222,13 +198,9 @@ export interface TestResult {
 
 // @public
 export interface Versions {
-    // (undocumented)
     getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
-    // (undocumented)
     inMajor(major: number): SemVer[];
-    // (undocumented)
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
     isVersion(version: SemOrStr): boolean;
     readonly latest: SemVer | undefined;
     readonly latestStable: SemVer | undefined;

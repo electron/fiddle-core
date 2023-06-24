@@ -7,8 +7,10 @@ export { SemVer };
 
 import { DefaultPaths, Paths } from './paths';
 
+/** Represents a type that can be either a SemVer object or a string */
 export type SemOrStr = SemVer | string;
 
+/** Represents information about a release */
 export interface ReleaseInfo {
   /** Electron version */
   version: string;
@@ -57,19 +59,22 @@ export interface Versions {
   /** Full list of all known Electron releases, Sorted in branch order. */
   readonly versions: SemVer[];
 
-  /** @returns true iff `version` is a release that this object knows about */
+  /** Returns true iff `version` is a release that this object knows about */
   isVersion(version: SemOrStr): boolean;
 
-  /** @returns all versions matching that major number. Sorted in branch order. */
+  /** Returns all versions matching that major number. Sorted in branch order. */
   inMajor(major: number): SemVer[];
 
-  /** @returns all versions in a range, inclusive. Sorted in branch order. */
+  /** Return all versions in a range, inclusive. Sorted in branch order. */
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 
-  /** @returns {@link ReleaseInfo} iff `version` is a release that this object knows about */
+  /** Retrieves the release info */
   getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
 }
 
+/**
+ * Represents the options for creating Electron versions.
+ */
 export interface ElectronVersionsCreateOptions {
   /** Initial versions to use if there is no cache. When provided, no initial fetch is done */
   initialVersions?: unknown;
@@ -78,6 +83,7 @@ export interface ElectronVersionsCreateOptions {
   ignoreCache?: boolean;
 }
 
+/** Compares two semantic version numbers */
 export function compareVersions(a: SemVer, b: SemVer): number {
   const l = a.compareMain(b);
   if (l) return l;
@@ -150,6 +156,7 @@ export class BaseVersions implements Versions {
   private readonly map = new Map<string, SemVer>();
   private readonly releaseInfo = new Map<string, ReleaseInfo>();
 
+  /** Sets the versions and their corresponding release information */
   protected setVersions(val: unknown): void {
     // release info doesn't need to be in sorted order
     this.releaseInfo.clear();
@@ -193,6 +200,7 @@ export class BaseVersions implements Versions {
     this.setVersions(versions);
   }
 
+  /** Gets an array of major versions that have prerelease versions */
   public get prereleaseMajors(): number[] {
     const majors = new Set<number>();
     for (const ver of this.map.values()) {
@@ -206,6 +214,7 @@ export class BaseVersions implements Versions {
     return [...majors];
   }
 
+  /** Gets an array of major versions that only have stable versions */
   public get stableMajors(): number[] {
     const majors = new Set<number>();
     for (const ver of this.map.values()) {
@@ -216,22 +225,27 @@ export class BaseVersions implements Versions {
     return [...majors];
   }
 
+  /** Gets an array of the most recently supported major versions */
   public get supportedMajors(): number[] {
     return this.stableMajors.slice(-NUM_SUPPORTED_MAJORS);
   }
 
+  /** Gets an array of major versions that are considered obsolete */
   public get obsoleteMajors(): number[] {
     return this.stableMajors.slice(0, -NUM_SUPPORTED_MAJORS);
   }
 
+  /** Gets an array of all semantic versions */
   public get versions(): SemVer[] {
     return [...this.map.values()];
   }
 
+  /** Gets the latest semantic version */
   public get latest(): SemVer | undefined {
     return this.versions.pop();
   }
 
+  /** Gets the latest stable semantic version */
   public get latestStable(): SemVer | undefined {
     let stable: SemVer | undefined = undefined;
     for (const ver of this.map.values()) {
@@ -242,10 +256,12 @@ export class BaseVersions implements Versions {
     return stable;
   }
 
+  /** Checks if a given value is a valid version */
   public isVersion(ver: SemOrStr): boolean {
     return this.map.has(typeof ver === 'string' ? ver : ver.version);
   }
 
+  /** Gets an array of semantic versions in a specific major version */
   public inMajor(major: number): SemVer[] {
     const versions: SemVer[] = [];
     for (const ver of this.map.values()) {
@@ -256,6 +272,7 @@ export class BaseVersions implements Versions {
     return versions;
   }
 
+  /** Gets an array of semantic versions within a specified range */
   public inRange(a: SemOrStr, b: SemOrStr): SemVer[] {
     if (typeof a !== 'string') a = a.version;
     if (typeof b !== 'string') b = b.version;
@@ -267,6 +284,7 @@ export class BaseVersions implements Versions {
     return versions.slice(first, last + 1);
   }
 
+  /** Gets the release information for a given version */
   public getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined {
     return this.releaseInfo.get(typeof ver === 'string' ? ver : ver.version);
   }
@@ -302,6 +320,7 @@ export class ElectronVersions extends BaseVersions {
     return now <= cacheTimeMs + VERSION_CACHE_TTL_MS;
   }
 
+  /** Creates an instance of the parent class. */
   public static async create(
     paths: Partial<Paths> = {},
     options: ElectronVersionsCreateOptions = {},
@@ -335,7 +354,7 @@ export class ElectronVersions extends BaseVersions {
     return new ElectronVersions(versionsCache, now, versions);
   }
 
-  // update the cache
+  /** update the cache */
   public async fetch(): Promise<void> {
     const d = debug('fiddle-core:ElectronVersions:fetch');
     const { mtimeMs, versionsCache } = this;
@@ -357,42 +376,61 @@ export class ElectronVersions extends BaseVersions {
     }
   }
 
+  /** Overrides the `prereleaseMajors` getter to ensure the cache is up to date */
   public override get prereleaseMajors(): number[] {
     void this.keepFresh();
     return super.prereleaseMajors;
   }
+
+  /** Overrides the `stableMajors` getter to ensure the cache is up to date */
   public override get stableMajors(): number[] {
     void this.keepFresh();
     return super.stableMajors;
   }
+
+  /** Overrides the `supportedMajors` getter to ensure the cache is up to date */
   public override get supportedMajors(): number[] {
     void this.keepFresh();
     return super.supportedMajors;
   }
+
+  /** Overrides the `obsoleteMajors` getter to ensure the cache is up to date */
   public override get obsoleteMajors(): number[] {
     void this.keepFresh();
     return super.obsoleteMajors;
   }
+
+  /**  Overrides the `versions` getter to ensure the cache is up to date */
   public override get versions(): SemVer[] {
     void this.keepFresh();
     return super.versions;
   }
+
+  /** Overrides the `latest` getter to ensure the cache is up to date */
   public override get latest(): SemVer | undefined {
     void this.keepFresh();
     return super.latest;
   }
+
+  /** Overrides the `latestStable` getter to ensure the cache is up to date. */
   public override get latestStable(): SemVer | undefined {
     void this.keepFresh();
     return super.latestStable;
   }
+
+  /** Overrides the `isVersion` method to ensure the cache is up to date */
   public override isVersion(ver: SemOrStr): boolean {
     void this.keepFresh();
     return super.isVersion(ver);
   }
+
+  /** Overrides the `inMajor` method to ensure the cache is up to date */
   public override inMajor(major: number): SemVer[] {
     void this.keepFresh();
     return super.inMajor(major);
   }
+
+  /** Overrides the `inRange` method to ensure the cache is up to date */
   public override inRange(a: SemOrStr, b: SemOrStr): SemVer[] {
     void this.keepFresh();
     return super.inRange(a, b);
