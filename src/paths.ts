@@ -1,9 +1,7 @@
 import * as path from 'path';
 import envPaths from 'env-paths';
 
-/**
- * Represents a set of paths used by an application.
- */
+/** Paths used by fiddle-core */
 export interface Paths {
   /** folder where electron zipfiles will be cached */
   readonly electronDownloads: string;

@@ -59,16 +59,16 @@ export interface Versions {
   /** Full list of all known Electron releases, Sorted in branch order. */
   readonly versions: SemVer[];
 
-  /** Returns true iff `version` is a release that this object knows about */
+  /** @returns true iff `version` is a release that this object knows about */
   isVersion(version: SemOrStr): boolean;
 
-  /** Returns all versions matching that major number. Sorted in branch order. */
+  /** @returns all versions matching that major number. Sorted in branch order. */
   inMajor(major: number): SemVer[];
 
-  /** Return all versions in a range, inclusive. Sorted in branch order. */
+  /** @returns all versions in a range, inclusive. Sorted in branch order. */
   inRange(a: SemOrStr, b: SemOrStr): SemVer[];
 
-  /** Retrieves the release info */
+  /** @returns {@link ReleaseInfo} iff `version` is a release that this object knows about */
   getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
 }
 

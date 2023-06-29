@@ -91,7 +91,7 @@ export class Installer extends EventEmitter {
     this.rebuildStates();
   }
 
-  /** Executes the subpath based on the platform */
+  /** Returns the executable subpath based on the platform */
   public static execSubpath(platform: string = process.platform): string {
     switch (platform) {
       case 'darwin':

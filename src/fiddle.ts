@@ -70,7 +70,6 @@ export class FiddleFactory {
    * checking out a specified branch (default: 'master'),
    * and setting the main file path based on the cloned files.
    */
-
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromRepo');
     const folder = path.join(this.fiddles, hashString(url));
@@ -94,7 +93,6 @@ export class FiddleFactory {
    * This method creates a Fiddle instance by saving a collection of filename-content pairs to a temporary directory
    * and setting the main file path accordingly.
    */
-
   public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromEntries');
     const map = new Map<string, string>(src);

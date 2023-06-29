@@ -198,9 +198,13 @@ export interface TestResult {
 
 // @public
 export interface Versions {
+    // (undocumented)
     getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
+    // (undocumented)
     inMajor(major: number): SemVer[];
+    // (undocumented)
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
+    // (undocumented)
     isVersion(version: SemOrStr): boolean;
     readonly latest: SemVer | undefined;
     readonly latestStable: SemVer | undefined;
