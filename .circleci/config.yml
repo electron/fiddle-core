@@ -5,6 +5,20 @@ orbs:
   node: circleci/node@5.1.0
   win: circleci/windows@5.0.0
 
+executors:
+  linux:
+    docker:
+      - image: cimg/base:stable
+  macos:
+    macos:
+      xcode: "14.3.0"
+    resource_class: macos.x86.medium.gen2
+  windows:
+    machine:
+      image: windows-server-2022-gui:stable
+      resource_class: windows.medium
+      shell: bash.exe
+
 commands:
   install:
     parameters:
@@ -29,38 +43,19 @@ commands:
           key: v1-dependencies-{{ arch }}-{{ checksum "yarn.lock" }}
 
 jobs:
-  test-linux:
-    docker:
-      - image: cimg/base:stable
+  test:
     parameters:
+      platform:
+        description: Platform to use
+        enum:
+          - linux
+          - macos
+          - windows
+        type: enum
       node-version:
         description: Node.js version to install
         type: string
-    steps:
-      - install:
-          node-version: << parameters.node-version >>
-      - run: npx yarn test:ci
-  test-mac:
-    macos:
-      xcode: "14.3.0"
-    resource_class: macos.x86.medium.gen2
-    parameters:
-      node-version:
-        description: Node.js version to install
-        type: string
-    steps:
-      - install:
-          node-version: << parameters.node-version >>
-      - run: npx yarn test:ci
-  test-windows:
-    executor:
-      # Need win/default otherwise the nvm-windows version is too old (has bugs)
-      name: win/default
-      shell: bash.exe
-    parameters:
-      node-version:
-        description: Node.js version to install
-        type: string
+    executor: << parameters.platform >>
     steps:
       - install:
           node-version: << parameters.node-version >>
@@ -70,38 +65,21 @@ workflows:
   test_and_release:
     # Run the test jobs first, then the release only when all the test jobs are successful
     jobs:
-      - test-linux:
+      - test:
           matrix:
             parameters:
+              platform:
+                - linux
+                - macos
+                - windows
               node-version:
-                - 18.14.0
-                - 16.19.0
-                - 14.19.0
-      - test-mac:
-          matrix:
-            parameters:
-              node-version:
-                - 18.14.0
-                - 16.19.0
-                - 14.19.0
-      - test-windows:
-          matrix:
-            parameters:
-              node-version:
+                - 20.4.0
                 - 18.14.0
                 - 16.19.0
                 - 14.19.0
       - cfa/release:
           requires:
-            - test-linux-18.14.0
-            - test-linux-16.19.0
-            - test-linux-14.19.0
-            - test-mac-18.14.0
-            - test-mac-16.19.0
-            - test-mac-14.19.0
-            - test-windows-18.14.0
-            - test-windows-16.19.0
-            - test-windows-14.19.0
+            - test
           filters:
             branches:
               only:
