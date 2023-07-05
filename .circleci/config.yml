@@ -45,17 +45,13 @@ commands:
 jobs:
   test:
     parameters:
-      platform:
-        description: Platform to use
-        enum:
-          - linux
-          - macos
-          - windows
-        type: enum
+      executor:
+        description: Executor to use
+        type: executor
       node-version:
         description: Node.js version to install
         type: string
-    executor: << parameters.platform >>
+    executor: << parameters.executor >>
     steps:
       - install:
           node-version: << parameters.node-version >>
@@ -66,10 +62,10 @@ workflows:
     # Run the test jobs first, then the release only when all the test jobs are successful
     jobs:
       - test:
-          name: test-<< matrix.platform >>-<< matrix.node-version >>
+          name: test-<< matrix.executor >>-<< matrix.node-version >>
           matrix:
             parameters:
-              platform:
+              executor:
                 - linux
                 - macos
                 - windows
