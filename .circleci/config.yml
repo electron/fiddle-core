@@ -42,7 +42,7 @@ jobs:
       - run: npx yarn test:ci
   test-mac:
     macos:
-      xcode: "14.0.0"
+      xcode: "14.3.0"
     parameters:
       node-version:
         description: Node.js version to install
