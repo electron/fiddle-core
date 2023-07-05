@@ -32,16 +32,16 @@ const DefaultRunnerOpts: RunnerOptions = {
   showConfig: true,
 } as const;
 
-/** Represents the options for spawning a runner */
+/** Options for spawning a runner */
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
-/** Represents the result of a test */
+/** Result of a test */
 export interface TestResult {
   /** Status of the test result */
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
 }
 
-/** Represents the result of a bisect operation */
+/** Result of a bisect operation */
 export interface BisectResult {
   /** The range of values where the bisect operation succeeded */
   range?: [string, string];
@@ -49,7 +49,7 @@ export interface BisectResult {
   status: 'bisect_succeeded' | 'test_error' | 'system_error';
 }
 
-/** Represents a class for executing Electron-related tasks */
+/** Executing Electron-related tasks */
 export class Runner {
   private osInfo = '';
 
@@ -141,7 +141,7 @@ export class Runner {
     return { exec, args };
   }
 
-  /** This method is used to spawn a child process and run a fiddle with Electron */
+  /** Spawns a child process and run a fiddle with Electron */
   public async spawn(
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
@@ -189,7 +189,7 @@ export class Runner {
     }
   }
 
-  /** This method that takes a TestResult object and returns a string representation of the result */
+  /** Displays result */
   public static displayResult(result: TestResult): string {
     const text = Runner.displayEmoji(result);
     switch (result.status) {
@@ -204,7 +204,7 @@ export class Runner {
     }
   }
 
-  /** This method is used to run a fiddle with a specific version of Electron and obtain the test result */
+  /** Runs a fiddle with a specific version of Electron and obtain the test result */
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
@@ -225,7 +225,7 @@ export class Runner {
     });
   }
 
-  /** This method performs a bisect operation between two versions of Electron to find a regression */
+  /** Bisects operation between two versions of Electron to find a regression */
   public async bisect(
     version_a: string | SemVer,
     version_b: string | SemVer,

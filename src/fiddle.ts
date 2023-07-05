@@ -17,7 +17,7 @@ export class Fiddle {
   constructor(
     /** It serves as the entry point or the primary script file for the fiddle */
     public readonly mainPath: string, // /path/to/main.js
-    /** It represents the code */
+    /** Is the cource of the fiddle */
     public readonly source: string,
   ) {}
 
@@ -67,7 +67,7 @@ export class FiddleFactory {
 
   /**
    * This method creates a Fiddle instance by cloning a Git repository into a temporary directory,
-   * checking out a specified branch (default: 'master'),
+   * optionally checking out a specified branch,
    * and setting the main file path based on the cloned files.
    */
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {

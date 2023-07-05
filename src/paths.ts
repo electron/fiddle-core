@@ -18,7 +18,7 @@ export interface Paths {
 
 const paths = envPaths('fiddle-core', { suffix: '' });
 
-/** This object contains default paths. */
+/** Default paths. */
 export const DefaultPaths: Paths = {
   electronDownloads: path.join(paths.data, 'electron', 'zips'),
   electronInstall: path.join(paths.data, 'electron', 'current'),

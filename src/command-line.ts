@@ -6,7 +6,7 @@ import { Fiddle, FiddleFactory } from './fiddle';
 import { Runner } from './runner';
 
 /**
- * This function handles command-line arguments, creates instances of necessary objects and
+ * Function handles command-line arguments, creates instances of necessary objects and
  * executes specific commands based on the arguments provided.
  * It logs debug information and exits the process if invalid parameters are detected.
  */

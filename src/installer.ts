@@ -14,7 +14,7 @@ function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
 
-/** This object is used to track progress in percent */
+/** Tracks progress in percent */
 export type ProgressObject = { percent: number };
 
 /**
@@ -23,20 +23,20 @@ export type ProgressObject = { percent: number };
  * See Installer.on('state-changed') to watch for state changes.
  */
 export enum InstallState {
-  /** This represent the missing state */
+  /** Missing state */
   missing = 'missing',
-  /** This represent the downloading state */
+  /** Downloading state */
   downloading = 'downloading',
-  /** This represent the downloaded state */
+  /** Downloaded state */
   downloaded = 'downloaded',
-  /** This represent the installing state */
+  /** Installing state */
   installing = 'installing',
-  /** This represent the installed state */
+  /** Installed state */
   installed = 'installed',
 }
 
 /**
- * Represents an event that indicates the installation state of something.
+ * An event that indicates a change in the installation state of a version
  */
 export interface InstallStateEvent {
   /** The version of the installation */
@@ -45,27 +45,27 @@ export interface InstallStateEvent {
   state: InstallState;
 }
 
-/** Represents an object that holds information about electron mirrors */
+/** An object that holds information about electron mirrors */
 export interface Mirrors {
-  /** The URL of the electron mirror */
+  /** URL of the electron mirror */
   electronMirror: string;
-  /** The URL of the electron nightly mirror */
+  /** URL of the electron nightly mirror */
   electronNightlyMirror: string;
 }
 
-/** Represents the configuration for an Electron binary */
+/** Configuration for an Electron binary */
 export interface ElectronBinary {
-  /** The path to the Electron binary */
+  /** Path to the Electron binary */
   path: string;
-  /** Indicates whether the Electron binary is already extracted or not */
+  /** Checks whether the Electron binary is already extracted or not */
   alreadyExtracted: boolean; // to check if it's kept as zipped or not
 }
 
-/** Represents the parameters for an installer */
+/** Parameters for an installer */
 export interface InstallerParams {
-  /** The callback function to receive progress updates */
+  /** Callback function to receive progress updates */
   progressCallback: (progress: ProgressObject) => void;
-  /** The mirrors to use for the installation */
+  /** Mirrors to use for the installation */
   mirror: Mirrors;
 }
 
@@ -103,12 +103,12 @@ export class Installer extends EventEmitter {
     }
   }
 
-  /** Gets the executable path for a given folder */
+  /** Executable path for a given folder */
   public static getExecPath(folder: string): string {
     return path.join(folder, Installer.execSubpath());
   }
 
-  /** Gets the installation state for a specific version */
+  /** Installation state for a specific version */
   public state(version: string): InstallState {
     return this.stateMap.get(version) || InstallState.missing;
   }
