@@ -16,6 +16,7 @@ workflows:
             - run: npx yarn test:ci
           use-test-steps: true
           matrix:
+            alias: test
             parameters:
               executor:
                 - node/linux
