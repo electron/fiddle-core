@@ -283,9 +283,14 @@ export class Installer extends EventEmitter {
     if (state === InstallState.missing || !zipFileExists) {
       d(`"${zipFile}" does not exist; downloading now`);
       this.setState(version, InstallState.downloading);
-      const tempFile = await this.download(version, opts);
-      await fs.ensureDir(electronDownloads);
-      await fs.move(tempFile, zipFile);
+      try {
+        const tempFile = await this.download(version, opts);
+        await fs.ensureDir(electronDownloads);
+        await fs.move(tempFile, zipFile);
+      } catch (err) {
+        this.setState(version, InstallState.missing);
+        throw err;
+      }
       this.setState(version, InstallState.downloaded);
       d(`"${zipFile}" downloaded`);
     } else {
@@ -387,13 +392,19 @@ export class Installer extends EventEmitter {
     } = this;
     const d = debug(`fiddle-core:Installer:${version}:install`);
 
+    const originalState = this.state(version);
     this.setState(version, InstallState.installing);
-    d(`installing from "${source}"`);
-    await rimraf(electronInstall);
+    try {
+      d(`installing from "${source}"`);
+      await rimraf(electronInstall);
 
-    // Call the user defined callback which unzips/copies files content
-    if (installCallback) {
-      await installCallback();
+      // Call the user defined callback which unzips/copies files content
+      if (installCallback) {
+        await installCallback();
+      }
+    } catch (err) {
+      this.setState(version, originalState);
+      throw err;
     }
 
     if (installedVersion) {
