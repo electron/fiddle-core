@@ -12,6 +12,10 @@ import {
   InstallState,
 } from '../src/index';
 
+jest.mock('extract-zip');
+
+const extractZip = jest.requireActual<typeof extract>('extract-zip');
+
 describe('Installer', () => {
   let tmpdir: string;
   let paths: Pick<Paths, 'electronDownloads' | 'electronInstall'>;
@@ -25,6 +29,11 @@ describe('Installer', () => {
   const fixture = (name: string) => path.join(__dirname, 'fixtures', name);
 
   beforeEach(async () => {
+    jest
+      .mocked(extract)
+      .mockImplementation(async (zipPath: string, opts: extract.Options) => {
+        await extractZip(zipPath, opts);
+      });
     tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     paths = {
       electronDownloads: path.join(tmpdir, 'downloads'),
@@ -226,6 +235,20 @@ describe('Installer', () => {
         { version, state: downloaded },
       ]);
       expect(binaryConfig).toHaveProperty('alreadyExtracted', false);
+      expect(nockScope.isDone());
+    });
+
+    it('resets install state on error', async () => {
+      // setup: version is not installed
+      expect(installer.state(version)).toBe(missing);
+
+      nock.cleanAll();
+      nockScope.get(/.*/).replyWithError('Server Error');
+
+      await expect(doDownload(installer, version)).rejects.toThrow(Error);
+      expect(installer.state(version)).toBe(missing);
+
+      expect(nockScope.isDone());
     });
   });
 
@@ -347,10 +370,14 @@ describe('Installer', () => {
     });
 
     it('leaves a valid state after an error', async () => {
+      // setup: version is not installed
+      expect(installer.state(version)).toBe(missing);
+
       const spy = jest
         .spyOn(installer, 'ensureDownloaded')
         .mockRejectedValueOnce(new Error('Download failed'));
       await expect(doInstall(installer, version)).rejects.toThrow(Error);
+      expect(installer.state(version)).toBe(missing);
       spy.mockRestore();
 
       const { events } = await doInstall(installer, version);
@@ -360,6 +387,17 @@ describe('Installer', () => {
         { version, state: installing },
         { version, state: installed },
       ]);
+    });
+
+    it('resets install state on error', async () => {
+      // setup: version is downloaded but not installed
+      await doDownload(installer, version);
+      expect(installer.state(version)).toBe(downloaded);
+
+      jest.mocked(extract).mockRejectedValue(new Error('Extract error'));
+
+      await expect(doInstall(installer, version)).rejects.toThrow(Error);
+      expect(installer.state(version)).toBe(downloaded);
     });
   });
 
