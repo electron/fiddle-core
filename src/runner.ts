@@ -238,6 +238,7 @@ export class Runner {
         '📐 Bisect Requested',
         '',
         ` - gist is ${fiddle.source}`,
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         ` - the version range is [${version_a.toString()}..${version_b.toString()}]`,
         ` - there are ${versions.length} versions in this range:`,
         '',
