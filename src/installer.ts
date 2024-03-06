@@ -4,7 +4,7 @@ import semver from 'semver';
 import debug from 'debug';
 import extract from 'extract-zip';
 import { EventEmitter } from 'events';
-import { rimraf } from 'rimraf';
+import { rimrafSync } from 'rimraf';
 import { download as electronDownload } from '@electron/get';
 import { inspect } from 'util';
 
@@ -168,11 +168,11 @@ export class Installer extends EventEmitter {
     // due to windows filesystem lockfile jank
     const rerunner = async (
       path: string,
-      func: (path: string) => Promise<void>,
+      func: (path: string) => void,
       counter = 1,
     ): Promise<boolean> => {
       try {
-        await func(path);
+        func(path);
         return true;
       } catch (error) {
         console.warn(
@@ -187,9 +187,15 @@ export class Installer extends EventEmitter {
       return false;
     };
 
-    const binaryCleaner = async (path: string) => {
+    const binaryCleaner = (path: string) => {
       if (fs.existsSync(path)) {
-        await fs.remove(path);
+        const { noAsar } = process;
+        try {
+          process.noAsar = true;
+          fs.removeSync(path);
+        } finally {
+          process.noAsar = noAsar;
+        }
       }
     };
     // get the zip path
@@ -396,7 +402,13 @@ export class Installer extends EventEmitter {
     this.setState(version, InstallState.installing);
     try {
       d(`installing from "${source}"`);
-      await rimraf(electronInstall);
+      const { noAsar } = process;
+      try {
+        process.noAsar = true;
+        rimrafSync(electronInstall);
+      } finally {
+        process.noAsar = noAsar;
+      }
 
       // Call the user defined callback which unzips/copies files content
       if (installCallback) {
