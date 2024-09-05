@@ -310,12 +310,26 @@ describe('ElectronVersions', () => {
       expect(versions.length).toBe(2);
     });
 
-    it('has no versions with a missing cache and failed fetch', async () => {
+    it('throws an error with a missing cache and failed fetch', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
       await fs.remove(versionsCache);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
+        Error,
+      );
       expect(scope.isDone());
-      expect(versions.length).toBe(0);
+    });
+
+    it('throws an error with a missing cache and a non-200 server response', async () => {
+      const scope = nockScope
+        .get('/releases.json')
+        .reply(500, JSON.stringify({ error: true }), {
+          'Content-Type': 'application/json',
+        });
+      await fs.remove(versionsCache);
+      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
+        Error,
+      );
+      expect(scope.isDone());
     });
 
     it('fetches with a stale cache', async () => {

@@ -292,6 +292,11 @@ export class ElectronVersions extends BaseVersions {
     const url = 'https://releases.electronjs.org/releases.json';
     d('fetching releases list from', url);
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Fetching versions failed with status code: ${response.status}`,
+      );
+    }
     const json = (await response.json()) as unknown;
     await fs.outputJson(cacheFile, json);
     return json;
@@ -329,6 +334,9 @@ export class ElectronVersions extends BaseVersions {
         versions = await ElectronVersions.fetchVersions(versionsCache);
       } catch (err) {
         d('error fetching versions', err);
+        if (!versions) {
+          throw err;
+        }
       }
     }
 
