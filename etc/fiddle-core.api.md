@@ -4,8 +4,6 @@
 
 ```ts
 
-/// <reference types="node" />
-
 import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { SemVer } from 'semver';
