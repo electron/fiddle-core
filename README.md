@@ -1,6 +1,6 @@
 # @electron/fiddle-core
 
-[![CircleCI](https://circleci.com/gh/electron/fiddle-core.svg?style=svg)](https://circleci.com/gh/electron/fiddle-core)
+[![Test](https://github.com/electron/fiddle-core/actions/workflows/test.yml/badge.svg)](https://github.com/electron/fiddle-core/actions/workflows/test.yml)
 [![NPM](https://img.shields.io/npm/v/@electron/fiddle-core.svg?style=flat)](https://npmjs.org/package/@electron/fiddle-core)
 
 Run fiddles from anywhere, on any Electron release

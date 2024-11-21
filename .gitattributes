@@ -1,0 +1,6 @@
+# Source code and markdown files should always use LF as line ending.
+*.js    text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.ts    text eol=lf
+*.yml   text eol=lf

@@ -14,6 +14,9 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b",
     "docs": "api-extractor run --local",
