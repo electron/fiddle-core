@@ -1,8 +1,10 @@
-import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
+import os from 'node:os';
+import path from 'node:path';
 
-import { Fiddle, FiddleFactory } from '../src/index';
+import fs from 'graceful-fs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { Fiddle, FiddleFactory } from '../src/index.js';
 
 describe('FiddleFactory', () => {
   let tmpdir: string;
@@ -10,13 +12,13 @@ describe('FiddleFactory', () => {
   let fiddleFactory: FiddleFactory;
 
   beforeEach(async () => {
-    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+    tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     fiddleDir = path.join(tmpdir, 'fiddles');
     fiddleFactory = new FiddleFactory(fiddleDir);
   });
 
-  afterEach(() => {
-    fs.removeSync(tmpdir);
+  afterEach(async () => {
+    await fs.promises.rm(tmpdir, { recursive: true, force: true });
   });
 
   function fiddleFixture(name: string): string {

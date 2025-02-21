@@ -1,16 +1,9 @@
 {
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
     "declaration": true,
-    "downlevelIteration": true,
-    "esModuleInterop": true,
-    "lib": ["es2018"],
-    "module": "commonjs",
-    "moduleResolution": "node",
     "outDir": "dist",
-    "resolveJsonModule": true,
-    "strict": true,
-    "target": "es2018",
-    "types": ["jest", "node"]
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
 }
