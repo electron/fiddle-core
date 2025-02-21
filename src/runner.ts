@@ -1,17 +1,18 @@
-import { Writable } from 'stream';
-import { ChildProcess, SpawnOptions, spawn } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import { ChildProcess, SpawnOptions, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { Writable } from 'node:stream';
+import { inspect } from 'node:util';
+
 import debug from 'debug';
 import getos from 'getos';
 import { SemVer } from 'semver';
-import { inspect } from 'util';
 
-import { Installer } from './installer';
-import { ElectronVersions, Versions } from './versions';
-import { Fiddle, FiddleFactory, FiddleSource } from './fiddle';
-import { DefaultPaths, Paths } from './paths';
+import { Installer } from './installer.js';
+import { ElectronVersions, Versions } from './versions.js';
+import { Fiddle, FiddleFactory, FiddleSource } from './fiddle.js';
+import { DefaultPaths, Paths } from './paths.js';
 
 export interface RunnerOptions {
   // extra arguments to be appended to the electron invocation

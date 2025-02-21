@@ -1,4 +1,5 @@
-import * as path from 'path';
+import path from 'node:path';
+
 import envPaths from 'env-paths';
 
 export interface Paths {

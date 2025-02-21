@@ -1,9 +1,10 @@
-import { inspect } from 'util';
+import { inspect } from 'node:util';
+
 import debug from 'debug';
 
-import { ElectronVersions } from './versions';
-import { Fiddle, FiddleFactory } from './fiddle';
-import { Runner } from './runner';
+import { ElectronVersions } from './versions.js';
+import { Fiddle, FiddleFactory } from './fiddle.js';
+import { Runner } from './runner.js';
 
 export async function runFromCommandLine(argv: string[]): Promise<void> {
   const d = debug('fiddle-core:runFromCommandLine');

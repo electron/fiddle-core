@@ -1,11 +1,13 @@
-import * as fs from 'fs-extra';
+import path from 'node:path';
+import util from 'node:util';
+
+import fs from 'graceful-fs';
 import { parse as semverParse, SemVer } from 'semver';
 import debug from 'debug';
-import fetch from 'node-fetch';
 
 export { SemVer };
 
-import { DefaultPaths, Paths } from './paths';
+import { DefaultPaths, Paths } from './paths.js';
 
 export type SemOrStr = SemVer | string;
 
@@ -297,8 +299,11 @@ export class ElectronVersions extends BaseVersions {
         `Fetching versions failed with status code: ${response.status}`,
       );
     }
-    const json = (await response.json()) as unknown;
-    await fs.outputJson(cacheFile, json);
+    const json = await response.json();
+    await util.promisify(fs.mkdir)(path.dirname(cacheFile), {
+      recursive: true,
+    });
+    await util.promisify(fs.writeFile)(cacheFile, JSON.stringify(json), 'utf8');
     return json;
   }
 
@@ -321,8 +326,10 @@ export class ElectronVersions extends BaseVersions {
 
     if (!options.ignoreCache) {
       try {
-        const st = await fs.stat(versionsCache);
-        versions = await fs.readJson(versionsCache);
+        const st = await util.promisify(fs.stat)(versionsCache);
+        versions = JSON.parse(
+          await util.promisify(fs.readFile)(versionsCache, 'utf8'),
+        );
         staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
       } catch (err) {
         d('cache file missing or cannot be read', err);
