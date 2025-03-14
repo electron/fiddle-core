@@ -142,7 +142,10 @@ export class Runner {
     // process the input parameters
     opts = { ...DefaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
-    const fiddle = await this.fiddleFactory.create(fiddleIn);
+    const isRunFromAsar = opts.args?.includes('runFromAsar');
+    const fiddle = await this.fiddleFactory.create(fiddleIn, {
+      packAsAsar: isRunFromAsar,
+    });
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
     // set up the electron binary and the fiddle

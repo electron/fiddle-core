@@ -1,6 +1,7 @@
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
+import asar from '@electron/asar';
 
 import { Fiddle, FiddleFactory } from '../src/index';
 
@@ -34,6 +35,9 @@ describe('FiddleFactory', () => {
       // test that the fiddle is a copy of the original
       const dirname = path.dirname(fiddle!.mainPath);
       expect(dirname).not.toEqual(sourceDir);
+
+      // test that main.js file is created (not app.asar)
+      expect(path.basename(fiddle!.mainPath)).toBe('main.js');
 
       // test that the fiddle is kept in the fiddle cache
       expect(path.dirname(dirname)).toBe(fiddleDir);
@@ -91,6 +95,41 @@ describe('FiddleFactory', () => {
       const fiddleIn = new Fiddle('/main/path', 'source');
       const fiddle = await fiddleFactory.create(fiddleIn);
       expect(fiddle).toBe(fiddleIn);
+    });
+
+    it('packages fiddle into ASAR archive', async () => {
+      const sourceDir = fiddleFixture('642fa8daaebea6044c9079e3f8a46390');
+      const fiddle = await fiddleFactory.create(sourceDir, {
+        packAsAsar: true,
+      });
+
+      function normalizeAsarFiles(files: string[]): string[] {
+        return files.map(
+          (f) => f.replace(/^\//, ''), // Remove leading slash
+        );
+      }
+
+      // test that app.asar file is created
+      expect(fiddle).toBeTruthy();
+      expect(path.basename(fiddle!.mainPath)).toBe('app.asar');
+
+      // test that the file list is identical
+      const dirname: string = fiddle!.mainPath;
+      const sourceFiles = fs.readdirSync(sourceDir);
+      const asarFiles = normalizeAsarFiles(
+        asar.listPackage(dirname, { isPack: false }),
+      );
+      expect(asarFiles).toStrictEqual(sourceFiles);
+
+      // test that the files' contents are identical
+      for (const file of sourceFiles) {
+        const sourceFileContent = fs.readFileSync(
+          path.join(sourceDir, file),
+          'utf-8',
+        );
+        const asarFileContent = asar.extractFile(dirname, file).toString();
+        expect(asarFileContent).toStrictEqual(sourceFileContent);
+      }
     });
 
     it.todo('reads fiddles from git repositories');
