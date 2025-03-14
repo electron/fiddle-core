@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as asar from '@electron/asar';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
@@ -95,16 +96,48 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }
 
-  public async create(src: FiddleSource): Promise<Fiddle | undefined> {
-    if (src instanceof Fiddle) return src;
-
-    if (typeof src === 'string') {
-      if (fs.existsSync(src)) return this.fromFolder(src);
-      if (/^[0-9A-Fa-f]{32}$/.test(src)) return this.fromGist(src);
-      if (/^https:/.test(src) || /\.git$/.test(src)) return this.fromRepo(src);
-      return;
+  public async create(
+    src: FiddleSource,
+    options?: { packAsAsar?: boolean },
+  ): Promise<Fiddle | undefined> {
+    let fiddle: Fiddle;
+    if (src instanceof Fiddle) {
+      fiddle = src;
+    } else if (typeof src === 'string') {
+      if (fs.existsSync(src)) {
+        fiddle = await this.fromFolder(src);
+      } else if (/^[0-9A-Fa-f]{32}$/.test(src)) {
+        fiddle = await this.fromGist(src);
+      } else if (/^https:/.test(src) || /\.git$/.test(src)) {
+        fiddle = await this.fromRepo(src);
+      } else {
+        return;
+      }
+    } else {
+      fiddle = await this.fromEntries(src as Iterable<[string, string]>);
     }
 
-    return this.fromEntries(src);
+    const { packAsAsar } = options || {};
+    if (packAsAsar) {
+      fiddle = await this.packageFiddleAsAsar(fiddle);
+    }
+    return fiddle;
+  }
+
+  private async packageFiddleAsAsar(fiddle: Fiddle): Promise<Fiddle> {
+    const mainJsPath = fiddle.mainPath;
+    const sourceDir = path.dirname(mainJsPath);
+    const asarOutputDir = path.join(this.fiddles, hashString(sourceDir));
+    const asarFilePath = path.join(asarOutputDir, 'app.asar');
+
+    await asar.createPackage(sourceDir, asarFilePath);
+    fiddle = new Fiddle(asarFilePath, fiddle.source);
+
+    try {
+      await fs.remove(sourceDir);
+    } catch (err) {
+      console.log('Error deleting unpacked folder:', err);
+    }
+    return fiddle;
   }
 }
