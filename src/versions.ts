@@ -157,11 +157,18 @@ export class BaseVersions implements Versions {
     // build the array
     let parsed: Array<SemVer | null> = [];
     if (isArrayOfVersionObjects(val)) {
-      parsed = val.map(({ version }) => semverParse(version));
+      parsed = val
+        .map(({ version }) => semverParse(version))
+        .filter((sem) => sem && SemVer.gte(sem.version, '0.30.0')) // Keep >=0.30.0
+        .filter((sem) => !sem.version.startsWith('0.2')); // Exclude atom-shell
 
       // build release info
       for (const entry of val) {
-        if (isReleaseInfo(entry)) {
+        if (
+          isReleaseInfo(entry) &&
+          SemVer.gte(entry.version, '0.30.0') && // Correct comparison
+          !entry.version.startsWith('0.2') // Exclude atom-shell
+        ){
           this.releaseInfo.set(entry.version, {
             version: entry.version,
             date: entry.date,
@@ -177,7 +184,10 @@ export class BaseVersions implements Versions {
         }
       }
     } else if (isArrayOfStrings(val)) {
-      parsed = val.map((version) => semverParse(version));
+      parsed = val
+      .map((version) => semverParse(version))
+      .filter((sem) => sem && SemVer.gte(sem.version, '0.30.0'))
+      .filter((sem) => !sem.version.startsWith('0.2'));
     } else {
       console.warn('Unrecognized versions:', val);
     }
