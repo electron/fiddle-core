@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as asar from '@electron/asar';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
@@ -14,7 +15,7 @@ function hashString(str: string): string {
 
 export class Fiddle {
   constructor(
-    public readonly mainPath: string, // /path/to/main.js
+    public readonly mainPath: string, // /path/to/main.js or /path/to/fiddle.asar
     public readonly source: string,
   ) {}
 
@@ -23,34 +24,34 @@ export class Fiddle {
   }
 }
 
-/**
- * - Iterable of [string, string] - filename-to-content key/value pairs
- * - string of form '/path/to/fiddle' - a fiddle on the filesystem
- * - string of form 'https://github.com/my/repo.git' - a git repo fiddle
- * - string of form '642fa8daaebea6044c9079e3f8a46390' - a github gist fiddle
- */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
 export class FiddleFactory {
-  constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
-
-  public async fromGist(gistId: string): Promise<Fiddle> {
-    return this.fromRepo(`https://gist.github.com/${gistId}.git`);
-  }
+  constructor(
+    private readonly fiddles: string = DefaultPaths.fiddles,
+    private readonly packAsAsar: boolean = false, // New option for ASAR support
+  ) {}
 
   public async fromFolder(source: string): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromFolder');
 
-    // make a tmp copy of this fiddle
+    // Make a temporary copy of this Fiddle
     const folder = path.join(this.fiddles, hashString(source));
     d({ source, folder });
     await fs.remove(folder);
 
-    // Disable asar in case any deps bundle Electron - ex. @electron/remote
+    // Disable asar temporarily
     const { noAsar } = process;
     process.noAsar = true;
     await fs.copy(source, folder);
     process.noAsar = noAsar;
+
+    if (this.packAsAsar) {
+      const asarPath = `${folder}.asar`;
+      await asar.createPackage(folder, asarPath);
+      await fs.remove(folder); // Remove original folder after packaging
+      return new Fiddle(asarPath, source);
+    }
 
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
@@ -60,7 +61,7 @@ export class FiddleFactory {
     const folder = path.join(this.fiddles, hashString(url));
     d({ url, checkout, folder });
 
-    // get the repo
+    // Get the repo
     if (!fs.existsSync(folder)) {
       d(`cloning "${url}" into "${folder}"`);
       const git = simpleGit();
@@ -71,28 +72,9 @@ export class FiddleFactory {
     await git.checkout(checkout);
     await git.pull('origin', checkout);
 
-    return new Fiddle(path.join(folder, 'main.js'), url);
-  }
-
-  public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
-    const d = debug('fiddle-core:FiddleFactory:fromEntries');
-    const map = new Map<string, string>(src);
-
-    // make a name for the directory that will hold our temp copy of the fiddle
-    const md5sum = createHash('md5');
-    for (const content of map.values()) md5sum.update(content);
-    const hash = md5sum.digest('hex');
-    const folder = path.join(this.fiddles, hash);
-    d({ folder });
-
-    // save content to that temp directory
-    await Promise.all(
-      [...map.entries()].map(([filename, content]) =>
-        fs.outputFile(path.join(folder, filename), content, 'utf8'),
-      ),
-    );
-
-    return new Fiddle(path.join(folder, 'main.js'), 'entries');
+    return this.packAsAsar
+      ? this.fromFolder(folder) // Convert repo into ASAR if enabled
+      : new Fiddle(path.join(folder, 'main.js'), url);
   }
 
   public async create(src: FiddleSource): Promise<Fiddle | undefined> {
