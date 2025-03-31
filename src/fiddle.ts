@@ -125,19 +125,14 @@ export class FiddleFactory {
   }
 
   private async packageFiddleAsAsar(fiddle: Fiddle): Promise<Fiddle> {
-    const mainJsPath = fiddle.mainPath;
-    const sourceDir = path.dirname(mainJsPath);
+    const sourceDir = path.dirname(fiddle.mainPath);
     const asarOutputDir = path.join(this.fiddles, hashString(sourceDir));
     const asarFilePath = path.join(asarOutputDir, 'app.asar');
 
     await asar.createPackage(sourceDir, asarFilePath);
-    fiddle = new Fiddle(asarFilePath, fiddle.source);
+    const packagedFiddle = new Fiddle(asarFilePath, fiddle.source);
 
-    try {
-      await fs.remove(sourceDir);
-    } catch (err) {
-      console.log('Error deleting unpacked folder:', err);
-    }
-    return fiddle;
+    await fs.remove(sourceDir);
+    return packagedFiddle;
   }
 }
