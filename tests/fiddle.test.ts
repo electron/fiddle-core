@@ -105,7 +105,7 @@ describe('FiddleFactory', () => {
 
       function normalizeAsarFiles(files: string[]): string[] {
         return files.map(
-          (f) => f.replace(/^\//, ''), // Remove leading slash
+          (f) => f.replace(/^[\\/]/, ''), // Remove leading slash or backslash
         );
       }
 
