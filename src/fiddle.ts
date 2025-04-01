@@ -55,7 +55,7 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
 
-  public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
+  public async fromRepo(url: string, checkout = 'main'): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromRepo');
     const folder = path.join(this.fiddles, hashString(url));
     d({ url, checkout, folder });
