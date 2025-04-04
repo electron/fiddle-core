@@ -32,6 +32,10 @@ export class Fiddle {
  */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
+export interface CreateOptions {
+  packAsAsar?: boolean;
+}
+
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
 
@@ -98,7 +102,7 @@ export class FiddleFactory {
 
   public async create(
     src: FiddleSource,
-    options?: { packAsAsar?: boolean },
+    options?: CreateOptions,
   ): Promise<Fiddle | undefined> {
     let fiddle: Fiddle;
     if (src instanceof Fiddle) {
