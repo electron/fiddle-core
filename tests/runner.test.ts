@@ -1,4 +1,10 @@
-import { Installer, FiddleFactory, Runner, TestResult } from '../src/index';
+import {
+  Installer,
+  FiddleFactory,
+  Runner,
+  TestResult,
+  CreateOptions,
+} from '../src/index';
 import child_process from 'child_process';
 import { EventEmitter } from 'events';
 import * as fs from 'fs-extra';
@@ -58,7 +64,14 @@ async function createFakeRunner({
       install: jest.fn().mockResolvedValue(pathToExecutable),
     } as Pick<Installer, 'install'> as Installer,
     fiddleFactory: {
-      create: jest.fn().mockResolvedValue(generatedFiddle),
+      create: jest.fn().mockImplementation((_, options?: CreateOptions) => {
+        if (options?.packAsAsar)
+          return Promise.resolve({
+            ...generatedFiddle,
+            mainPath: '/path/to/fiddle/app.asar',
+          });
+        return Promise.resolve(generatedFiddle);
+      }),
     } as Pick<FiddleFactory, 'create'> as FiddleFactory,
     paths: {
       versionsCache,
@@ -179,6 +192,31 @@ describe('Runner', () => {
 
       await expect(runner.spawn('12.0.1', 'invalid-fiddle')).rejects.toEqual(
         new Error(`Invalid fiddle: "'invalid-fiddle'"`),
+      );
+    });
+
+    it('spawns a subprocess with ASAR path when runFromAsar is true', async () => {
+      const runner = await createFakeRunner({});
+      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+
+      await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
+        out: {
+          write: mockStdout,
+        } as Pick<Writable, 'write'> as Writable,
+        runFromAsar: true,
+      });
+
+      expect(child_process.spawn).toHaveBeenCalledTimes(1);
+      expect(child_process.spawn).toHaveBeenCalledWith(
+        '/path/to/electron/executable',
+        ['/path/to/fiddle/app.asar'],
+        {
+          args: [],
+          headless: false,
+          out: expect.any(Object) as Writable,
+          showConfig: true,
+          runFromAsar: true,
+        },
       );
     });
   });

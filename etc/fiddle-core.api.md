@@ -111,7 +111,9 @@ export class Fiddle {
 export class FiddleFactory {
     constructor(fiddles?: string);
     // (undocumented)
-    create(src: FiddleSource): Promise<Fiddle | undefined>;
+    create(src: FiddleSource, options?: {
+        packAsAsar?: boolean;
+    }): Promise<Fiddle | undefined>;
     // (undocumented)
     fromEntries(src: Iterable<[string, string]>): Promise<Fiddle>;
     // (undocumented)

@@ -22,6 +22,8 @@ export interface RunnerOptions {
   out?: Writable;
   // whether to show config info (e.g. platform os & arch) in the log
   showConfig?: boolean;
+  // whether to run the fiddle from asar
+  runFromAsar?: boolean;
 }
 
 const DefaultRunnerOpts: RunnerOptions = {
@@ -142,7 +144,9 @@ export class Runner {
     // process the input parameters
     opts = { ...DefaultRunnerOpts, ...opts };
     const version = versionIn instanceof SemVer ? versionIn.version : versionIn;
-    const fiddle = await this.fiddleFactory.create(fiddleIn);
+    const fiddle = await this.fiddleFactory.create(fiddleIn, {
+      packAsAsar: opts.runFromAsar,
+    });
     if (!fiddle) throw new Error(`Invalid fiddle: "${inspect(fiddleIn)}"`);
 
     // set up the electron binary and the fiddle
