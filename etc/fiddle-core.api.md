@@ -10,264 +10,645 @@ import { SemVer } from 'semver';
 import { SpawnOptions } from 'child_process';
 import { Writable } from 'stream';
 
-// @public
+/**
+ * Represents a base class for managing Electron version information.
+ * @public
+ */
 export class BaseVersions implements Versions {
+    /**
+     * Creates an instance of BaseVersions.
+     * @param versions - Initial version data.
+     */
     constructor(versions: unknown);
-    // (undocumented)
+
+    /**
+     * Retrieves the release information for a specific Electron version.
+     * @param ver - The version to get info for.
+     * @returns The release info or undefined.
+     */
     getReleaseInfo(ver: SemOrStr): ReleaseInfo | undefined;
-    // (undocumented)
+
+    /**
+     * Retrieves all Electron versions within a specific major version.
+     * @param major - The major version.
+     */
     inMajor(major: number): SemVer[];
-    // (undocumented)
+
+    /**
+     * Retrieves all Electron versions within a specified range.
+     * @param a - Starting version.
+     * @param b - Ending version.
+     */
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
+
+    /**
+     * Checks if a given version exists in the list of Electron versions.
+     * @param ver - Version to check.
+     */
     isVersion(ver: SemOrStr): boolean;
-    // (undocumented)
+
+    /**
+     * Gets the latest Electron version available.
+     */
     get latest(): SemVer | undefined;
-    // (undocumented)
+
+    /**
+     * Gets the latest stable Electron version available.
+     */
     get latestStable(): SemVer | undefined;
-    // (undocumented)
+
+    /**
+     * Retrieves an array of obsolete major version numbers.
+     */
     get obsoleteMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves an array of prerelease major version numbers.
+     */
     get prereleaseMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Sets the versions data.
+     * @param val - New version data.
+     */
     protected setVersions(val: unknown): void;
-    // (undocumented)
+
+    /**
+     * Retrieves an array of stable major version numbers.
+     */
     get stableMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves an array of supported major version numbers.
+     */
     get supportedMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves all available Electron versions.
+     */
     get versions(): SemVer[];
 }
 
-// @public (undocumented)
+/**
+ * Represents the result of a bisect operation.
+ * @public
+ */
 export interface BisectResult {
-    // (undocumented)
+    /**
+     * The range of versions tested during the bisect process.
+     */
     range?: [string, string];
-    // (undocumented)
+
+    /**
+     * The status of the bisect process.
+     */
     status: 'bisect_succeeded' | 'test_error' | 'system_error';
 }
 
-// @public (undocumented)
+/**
+ * Compares two SemVer objects.
+ * @param a - First version.
+ * @param b - Second version.
+ * @returns A number indicating comparison result: -1, 0, or 1.
+ * @public
+ */
 export function compareVersions(a: SemVer, b: SemVer): number;
 
-// @public (undocumented)
+/**
+ * Default set of paths used throughout the application.
+ * @public
+ */
 export const DefaultPaths: Paths;
 
-// @public (undocumented)
+/**
+ * Information about a downloaded Electron binary.
+ * @public
+ */
 export interface ElectronBinary {
-    // (undocumented)
+    /**
+     * Indicates whether the Electron binary has already been extracted.
+     */
     alreadyExtracted: boolean;
-    // (undocumented)
+
+    /**
+     * The file path to the Electron binary.
+     */
     path: string;
 }
 
-// @public
+/**
+ * Manages Electron version information, extending BaseVersions.
+ * @public
+ */
 export class ElectronVersions extends BaseVersions {
-    // (undocumented)
+    /**
+     * Creates an instance of ElectronVersions.
+     * @param paths - Optional custom paths.
+     * @param options - Options for creation.
+     */
     static create(paths?: Partial<Paths>, options?: ElectronVersionsCreateOptions): Promise<ElectronVersions>;
-    // (undocumented)
+
+export class ElectronVersions extends BaseVersions {
+    /**
+     * Fetches the latest Electron versions data.
+     * @returns A promise that resolves when the latest version data is fetched.
+     */
     fetch(): Promise<void>;
-    // (undocumented)
+
+    /**
+     * Retrieves all Electron versions within a specific major version.
+     * @param major - The major version number to filter by.
+     * @returns An array of matching Electron versions.
+     */
     inMajor(major: number): SemVer[];
-    // (undocumented)
+
+    /**
+     * Retrieves all Electron versions within a specified range.
+     * @param a - The start of the version range.
+     * @param b - The end of the version range.
+     * @returns An array of matching Electron versions.
+     */
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
+
+    /**
+     * Checks if the specified version exists in the known versions list.
+     * @param ver - The version to check.
+     * @returns True if the version is known, otherwise false.
+     */
     isVersion(ver: SemOrStr): boolean;
-    // (undocumented)
+
+    /**
+     * Gets the latest available Electron version.
+     */
     get latest(): SemVer | undefined;
-    // (undocumented)
+
+    /**
+     * Gets the latest stable Electron version available.
+     */
     get latestStable(): SemVer | undefined;
-    // (undocumented)
+
+    /**
+     * Retrieves a list of major versions considered obsolete.
+     */
     get obsoleteMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves a list of major versions that are in prerelease.
+     */
     get prereleaseMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves a list of major versions that are stable.
+     */
     get stableMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves a list of major versions that are currently supported.
+     */
     get supportedMajors(): number[];
-    // (undocumented)
+
+    /**
+     * Retrieves the complete list of known Electron versions.
+     */
     get versions(): SemVer[];
 }
 
-// @public (undocumented)
+
+/**
+ * Options for creating an ElectronVersions instance.
+ * @public
+ */
 export interface ElectronVersionsCreateOptions {
+    /**
+     * If true, ignores the cache and fetches fresh data.
+     */
     ignoreCache?: boolean;
+
+    /**
+     * Initial versions data to use.
+     */
     initialVersions?: unknown;
 }
 
-// @public (undocumented)
+/**
+ * Represents an in-memory Electron fiddle.
+ * @public
+ */
 export class Fiddle {
-    constructor(mainPath: string, // /path/to/main.js
-    source: string);
-    // (undocumented)
+    /**
+     * Creates an instance of Fiddle.
+     * @param mainPath - Path to the main JS file.
+     * @param source - Source code.
+     */
+    constructor(mainPath: string, source: string);
+
+    /**
+     * The path to the main JavaScript file of the fiddle.
+     */
     readonly mainPath: string;
-    // (undocumented)
+
+    /**
+     * Removes the fiddle and cleans up any associated resources.
+     */
     remove(): Promise<void>;
-    // (undocumented)
+
+    /**
+     * The source code of the fiddle.
+     */
     readonly source: string;
 }
 
-// @public (undocumented)
+/**
+ * Factory class for creating Fiddle instances from various sources.
+ * @public
+ */
 export class FiddleFactory {
+    /**
+     * Creates an instance of FiddleFactory.
+     * @param fiddles - Optional base directory for fiddles.
+     */
     constructor(fiddles?: string);
-    // (undocumented)
+
+    /**
+     * Creates an instance of a Fiddle from a source string.
+     * @param src - The source to create a fiddle from.
+     */
     create(src: FiddleSource): Promise<Fiddle | undefined>;
-    // (undocumented)
+
+    /**
+     * Creates a Fiddle instance from key-value entries.
+     * @param src - Iterable of path and code pairs.
+     */
     fromEntries(src: Iterable<[string, string]>): Promise<Fiddle>;
-    // (undocumented)
+
+    /**
+     * Creates a Fiddle instance from a local folder.
+     * @param source - Path to the folder.
+     */
     fromFolder(source: string): Promise<Fiddle>;
-    // (undocumented)
+
+    /**
+     * Creates a Fiddle instance from a GitHub Gist.
+     * @param gistId - The ID of the Gist.
+     */
     fromGist(gistId: string): Promise<Fiddle>;
-    // (undocumented)
+
+    /**
+     * Creates a Fiddle instance from a Git repository.
+     * @param url - Repository URL.
+     * @param checkout - Optional branch or commit.
+     */
     fromRepo(url: string, checkout?: string): Promise<Fiddle>;
 }
 
-// @public
+/**
+ * A source from which a Fiddle can be created.
+ * @public
+ */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
 
 // @public
 export class Installer extends EventEmitter {
+    /**
+     * Creates an instance of the Installer.
+     * @param pathsIn - Optional object to override default installation paths.
+     */
     constructor(pathsIn?: Partial<Paths>);
-    // (undocumented)
+
+    /**
+     * Ensures the specified Electron version is downloaded.
+     * @param version - The Electron version to download.
+     * @param opts - Optional installer parameters.
+     * @returns A promise that resolves with the Electron binary info.
+     */
     ensureDownloaded(version: string, opts?: Partial<InstallerParams>): Promise<ElectronBinary>;
-    // (undocumented)
+
+    /**
+     * Gets the executable subpath based on the platform.
+     * @param platform - Optional platform string (e.g., 'win32', 'darwin').
+     * @returns The relative path to the Electron executable.
+     */
     static execSubpath(platform?: string): string;
-    // (undocumented)
+
+    /**
+     * Resolves the full path to the Electron executable in a given folder.
+     * @param folder - The base folder containing the Electron binary.
+     * @returns The full executable path.
+     */
     static getExecPath(folder: string): string;
-    // (undocumented)
+
+    /**
+     * Installs the specified Electron version.
+     * @param version - The version to install.
+     * @param opts - Optional installer parameters.
+     * @returns A promise that resolves with the install path.
+     */
     install(version: string, opts?: Partial<InstallerParams>): Promise<string>;
+
+    /**
+     * Gets the currently installed Electron version, if any.
+     */
     get installedVersion(): string | undefined;
+
+    /**
+     * Removes a previously installed Electron version.
+     * @param version - The version to remove.
+     * @returns A promise that resolves when removal is complete.
+     */
     remove(version: string): Promise<void>;
-    // (undocumented)
+
+    /**
+     * Gets the installation state of a specified version.
+     * @param version - The version to check.
+     * @returns The install state of the version.
+     */
     state(version: string): InstallState;
 }
 
-// @public (undocumented)
+// @public
 export interface InstallerParams {
-    // (undocumented)
+    /**
+     * URLs to custom mirrors for Electron downloads.
+     */
     mirror: Mirrors;
-    // (undocumented)
+
+    /**
+     * A callback to report download progress.
+     */
     progressCallback: (progress: ProgressObject) => void;
 }
 
 // @public
 export enum InstallState {
-    // (undocumented)
+    /**
+     * Version has been downloaded.
+     */
     downloaded = "downloaded",
-    // (undocumented)
+
+    /**
+     * Version is currently downloading.
+     */
     downloading = "downloading",
-    // (undocumented)
+
+    /**
+     * Version has been installed.
+     */
     installed = "installed",
-    // (undocumented)
+
+    /**
+     * Version is currently installing.
+     */
     installing = "installing",
-    // (undocumented)
+
+    /**
+     * Version is not installed or downloaded.
+     */
     missing = "missing"
 }
 
-// @public (undocumented)
+// @public
 export interface InstallStateEvent {
-    // (undocumented)
+    /**
+     * Current install state of the version.
+     */
     state: InstallState;
-    // (undocumented)
+
+    /**
+     * The version this event relates to.
+     */
     version: string;
 }
 
-// @public (undocumented)
+// @public
 export interface Mirrors {
-    // (undocumented)
+    /**
+     * URL to the Electron stable release mirror.
+     */
     electronMirror: string;
-    // (undocumented)
+
+    /**
+     * URL to the Electron nightly release mirror.
+     */
     electronNightlyMirror: string;
 }
 
-// @public (undocumented)
+// @public
 export interface Paths {
-    // (undocumented)
+    /**
+     * Path to the directory where Electron downloads are stored.
+     */
     readonly electronDownloads: string;
-    // (undocumented)
+
+    /**
+     * Path to the directory where Electron installs are placed.
+     */
     readonly electronInstall: string;
-    // (undocumented)
+
+    /**
+     * Path to the directory containing user fiddles.
+     */
     readonly fiddles: string;
-    // (undocumented)
+
+    /**
+     * Path to the cache of version metadata.
+     */
     readonly versionsCache: string;
 }
 
-// @public (undocumented)
+// @public
 export type ProgressObject = {
+    /**
+     * Current download progress percentage (0–100).
+     */
     percent: number;
 };
 
-// @public (undocumented)
+// @public
 export interface ReleaseInfo {
+    /**
+     * Chrome version used in the Electron release.
+     */
     chrome: string;
+
+    /**
+     * Release date in ISO format.
+     */
     date: string;
+
+    /**
+     * List of available files in the release.
+     */
     files: Array<string>;
+
+    /**
+     * Version of Node.js modules.
+     */
     modules: string;
+
+    /**
+     * Node.js version used in the Electron release.
+     */
     node: string;
+
+    /**
+     * OpenSSL version.
+     */
     openssl: string;
+
+    /**
+     * libuv version.
+     */
     uv: string;
+
+    /**
+     * V8 JavaScript engine version.
+     */
     v8: string;
+
+    /**
+     * Full Electron version string.
+     */
     version: string;
+
+    /**
+     * zlib version used.
+     */
     zlib: string;
 }
 
-// @public (undocumented)
+// @public
+/**
+ * Runs the installer from the command line with the given arguments.
+ * @param argv - Command-line arguments array.
+ */
 export function runFromCommandLine(argv: string[]): Promise<void>;
 
-// @public (undocumented)
+// @public
 export class Runner {
-    // (undocumented)
-    bisect(version_a: string | SemVer, version_b: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<BisectResult>;
-    // (undocumented)
+    /**
+     * Performs a bisect between two versions using a given fiddle.
+     * @param version_a - Starting version.
+     * @param version_b - Ending version.
+     * @param fiddleIn - Fiddle to run the test with.
+     * @param opts - Optional runner spawn options.
+     * @returns The result of the bisect operation.
+     */
+    bisect(
+        version_a: string | SemVer,
+        version_b: string | SemVer,
+        fiddleIn: FiddleSource,
+        opts?: RunnerSpawnOptions
+    ): Promise<BisectResult>;
+
+    /**
+     * Creates a new Runner instance.
+     * @param opts - Optional dependencies to inject.
+     */
     static create(opts?: {
         installer?: Installer;
         fiddleFactory?: FiddleFactory;
         paths?: Partial<Paths>;
         versions?: Versions;
     }): Promise<Runner>;
-    // (undocumented)
+
+    /**
+     * Displays a human-readable string for a test result.
+     * @param result - The test result.
+     * @returns A display string for the result.
+     */
     static displayResult(result: TestResult): string;
-    // (undocumented)
+
+    /**
+     * Runs a fiddle against the specified Electron version.
+     * @param version - The Electron version to test.
+     * @param fiddle - The fiddle to run.
+     * @param opts - Optional run options.
+     * @returns The test result.
+     */
     run(version: string | SemVer, fiddle: FiddleSource, opts?: RunnerSpawnOptions): Promise<TestResult>;
-    // (undocumented)
-    spawn(versionIn: string | SemVer, fiddleIn: FiddleSource, opts?: RunnerSpawnOptions): Promise<ChildProcess>;
+
+    /**
+     * Spawns a child process running the fiddle with Electron.
+     * @param versionIn - The Electron version.
+     * @param fiddleIn - The fiddle source.
+     * @param opts - Spawn options.
+     * @returns A promise resolving to the spawned child process.
+     */
+    spawn(
+        versionIn: string | SemVer,
+        fiddleIn: FiddleSource,
+        opts?: RunnerSpawnOptions
+    ): Promise<ChildProcess>;
 }
 
-// @public (undocumented)
+// @public
 export interface RunnerOptions {
-    // (undocumented)
+    /**
+     * Additional command-line arguments to pass.
+     */
     args?: string[];
-    // (undocumented)
+
+    /**
+     * Whether to run Electron in headless mode.
+     */
     headless?: boolean;
-    // (undocumented)
+
+    /**
+     * Writable stream for capturing output.
+     */
     out?: Writable;
-    // (undocumented)
+
+    /**
+     * Whether to show the Electron config in output.
+     */
     showConfig?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
-// @public (undocumented)
+// @public
 export type SemOrStr = SemVer | string;
 
 export { SemVer }
 
-// @public (undocumented)
+// @public
 export interface TestResult {
-    // (undocumented)
+    /**
+     * Status of the test run.
+     */
     status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
 }
 
 // @public
 export interface Versions {
-    // (undocumented)
+    /**
+     * Retrieves release information for the given version.
+     * @param version - The version to get info for.
+     * @returns The release info or undefined if not found.
+     */
     getReleaseInfo(version: SemOrStr): ReleaseInfo | undefined;
-    // (undocumented)
+
+    /**
+     * Lists all versions in the specified major version.
+     * @param major - The major version number.
+     * @returns An array of matching versions.
+     */
     inMajor(major: number): SemVer[];
-    // (undocumented)
+
+    /**
+     * Lists all versions in the specified range.
+     * @param a - Start of the range.
+     * @param b - End of the range.
+     * @returns An array of versions within the range.
+     */
     inRange(a: SemOrStr, b: SemOrStr): SemVer[];
-    // (undocumented)
+
+    /**
+     * Checks if a given version is valid and known.
+     * @param version - The version to check.
+     * @returns True if known, false otherwise.
+     */
     isVersion(version: SemOrStr): boolean;
     readonly latest: SemVer | undefined;
     readonly latestStable: SemVer | undefined;
