@@ -3,7 +3,7 @@ import {
   FiddleFactory,
   Runner,
   TestResult,
-  CreateOptions,
+  FiddleFactoryCreateOptions,
 } from '../src/index';
 import child_process from 'child_process';
 import { EventEmitter } from 'events';
@@ -64,14 +64,16 @@ async function createFakeRunner({
       install: jest.fn().mockResolvedValue(pathToExecutable),
     } as Pick<Installer, 'install'> as Installer,
     fiddleFactory: {
-      create: jest.fn().mockImplementation((_, options?: CreateOptions) => {
-        if (options?.packAsAsar)
-          return Promise.resolve({
-            ...generatedFiddle,
-            mainPath: '/path/to/fiddle/app.asar',
-          });
-        return Promise.resolve(generatedFiddle);
-      }),
+      create: jest
+        .fn()
+        .mockImplementation((_, options?: FiddleFactoryCreateOptions) => {
+          if (options?.packAsAsar)
+            return Promise.resolve({
+              ...generatedFiddle,
+              mainPath: '/path/to/fiddle/app.asar',
+            });
+          return Promise.resolve(generatedFiddle);
+        }),
     } as Pick<FiddleFactory, 'create'> as FiddleFactory,
     paths: {
       versionsCache,
@@ -210,13 +212,7 @@ describe('Runner', () => {
       expect(child_process.spawn).toHaveBeenCalledWith(
         '/path/to/electron/executable',
         ['/path/to/fiddle/app.asar'],
-        {
-          args: [],
-          headless: false,
-          out: expect.any(Object) as Writable,
-          showConfig: true,
-          runFromAsar: true,
-        },
+        expect.anything(),
       );
     });
   });

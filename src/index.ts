@@ -10,7 +10,12 @@ import {
   Mirrors,
   ProgressObject,
 } from './installer';
-import { CreateOptions, Fiddle, FiddleFactory, FiddleSource } from './fiddle';
+import {
+  Fiddle,
+  FiddleFactory,
+  FiddleSource,
+  FiddleFactoryCreateOptions,
+} from './fiddle';
 import {
   BisectResult,
   Runner,
@@ -33,13 +38,13 @@ import { runFromCommandLine } from './command-line';
 export {
   BaseVersions,
   BisectResult,
-  CreateOptions,
   DefaultPaths,
   ElectronBinary,
   ElectronVersions,
   ElectronVersionsCreateOptions,
   Fiddle,
   FiddleFactory,
+  FiddleFactoryCreateOptions,
   FiddleSource,
   InstallState,
   InstallStateEvent,

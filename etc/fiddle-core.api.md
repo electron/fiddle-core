@@ -111,9 +111,7 @@ export class Fiddle {
 export class FiddleFactory {
     constructor(fiddles?: string);
     // (undocumented)
-    create(src: FiddleSource, options?: {
-        packAsAsar?: boolean;
-    }): Promise<Fiddle | undefined>;
+    create(src: FiddleSource, options?: FiddleFactoryCreateOptions): Promise<Fiddle | undefined>;
     // (undocumented)
     fromEntries(src: Iterable<[string, string]>): Promise<Fiddle>;
     // (undocumented)
@@ -122,6 +120,12 @@ export class FiddleFactory {
     fromGist(gistId: string): Promise<Fiddle>;
     // (undocumented)
     fromRepo(url: string, checkout?: string): Promise<Fiddle>;
+}
+
+// @public (undocumented)
+export interface FiddleFactoryCreateOptions {
+    // (undocumented)
+    packAsAsar?: boolean;
 }
 
 // @public
@@ -243,6 +247,8 @@ export interface RunnerOptions {
     headless?: boolean;
     // (undocumented)
     out?: Writable;
+    // (undocumented)
+    runFromAsar?: boolean;
     // (undocumented)
     showConfig?: boolean;
 }
