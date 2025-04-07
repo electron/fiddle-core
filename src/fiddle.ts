@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as asar from '@electron/asar';
 import debug from 'debug';
 import simpleGit from 'simple-git';
 import { createHash } from 'crypto';
@@ -30,6 +31,10 @@ export class Fiddle {
  * - string of form '642fa8daaebea6044c9079e3f8a46390' - a github gist fiddle
  */
 export type FiddleSource = Fiddle | string | Iterable<[string, string]>;
+
+export interface FiddleFactoryCreateOptions {
+  packAsAsar?: boolean;
+}
 
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
@@ -95,16 +100,43 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }
 
-  public async create(src: FiddleSource): Promise<Fiddle | undefined> {
-    if (src instanceof Fiddle) return src;
-
-    if (typeof src === 'string') {
-      if (fs.existsSync(src)) return this.fromFolder(src);
-      if (/^[0-9A-Fa-f]{32}$/.test(src)) return this.fromGist(src);
-      if (/^https:/.test(src) || /\.git$/.test(src)) return this.fromRepo(src);
-      return;
+  public async create(
+    src: FiddleSource,
+    options?: FiddleFactoryCreateOptions,
+  ): Promise<Fiddle | undefined> {
+    let fiddle: Fiddle;
+    if (src instanceof Fiddle) {
+      fiddle = src;
+    } else if (typeof src === 'string') {
+      if (fs.existsSync(src)) {
+        fiddle = await this.fromFolder(src);
+      } else if (/^[0-9A-Fa-f]{32}$/.test(src)) {
+        fiddle = await this.fromGist(src);
+      } else if (/^https:/.test(src) || /\.git$/.test(src)) {
+        fiddle = await this.fromRepo(src);
+      } else {
+        return;
+      }
+    } else {
+      fiddle = await this.fromEntries(src as Iterable<[string, string]>);
     }
 
-    return this.fromEntries(src);
+    const { packAsAsar } = options || {};
+    if (packAsAsar) {
+      fiddle = await this.packageFiddleAsAsar(fiddle);
+    }
+    return fiddle;
+  }
+
+  private async packageFiddleAsAsar(fiddle: Fiddle): Promise<Fiddle> {
+    const sourceDir = path.dirname(fiddle.mainPath);
+    const asarOutputDir = path.join(this.fiddles, hashString(sourceDir));
+    const asarFilePath = path.join(asarOutputDir, 'app.asar');
+
+    await asar.createPackage(sourceDir, asarFilePath);
+    const packagedFiddle = new Fiddle(asarFilePath, fiddle.source);
+
+    await fs.remove(sourceDir);
+    return packagedFiddle;
   }
 }
