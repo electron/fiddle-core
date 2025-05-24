@@ -4,11 +4,11 @@
 
 ```ts
 
-import { ChildProcess } from 'child_process';
-import { EventEmitter } from 'events';
+import { ChildProcess } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { SemVer } from 'semver';
-import { SpawnOptions } from 'child_process';
-import { Writable } from 'stream';
+import { SpawnOptions } from 'node:child_process';
+import { Writable } from 'node:stream';
 
 // @public
 export class BaseVersions implements Versions {
