@@ -66,7 +66,8 @@ export class Runner {
   ): Promise<Runner> {
     const paths = Object.freeze({ ...DefaultPaths, ...(opts.paths || {}) });
     const installer = opts.installer || new Installer(paths);
-    const versions = opts.versions || (await ElectronVersions.create(paths));
+    const versions =
+      opts.versions || (await ElectronVersions.create({ paths }));
     const factory = opts.fiddleFactory || new FiddleFactory(paths.fiddles);
     return new Runner(installer, versions, factory);
   }

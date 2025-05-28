@@ -301,7 +301,9 @@ describe('ElectronVersions', () => {
         'utf8',
       );
       expect(nockScope.isDone()); // No mocks
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(1);
     });
 
@@ -321,7 +323,9 @@ describe('ElectronVersions', () => {
         },
       );
       await fs.promises.rm(versionsCache, { force: true });
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(2);
     });
@@ -329,9 +333,9 @@ describe('ElectronVersions', () => {
     it('throws an error with a missing cache and failed fetch', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
       await fs.promises.rm(versionsCache, { force: true });
-      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
-        Error,
-      );
+      await expect(
+        ElectronVersions.create({ paths: { versionsCache } }),
+      ).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
@@ -342,9 +346,9 @@ describe('ElectronVersions', () => {
           'Content-Type': 'application/json',
         });
       await fs.promises.rm(versionsCache, { force: true });
-      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
-        Error,
-      );
+      await expect(
+        ElectronVersions.create({ paths: { versionsCache } }),
+      ).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
@@ -368,7 +372,9 @@ describe('ElectronVersions', () => {
       );
       const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
       await fs.promises.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(3);
     });
@@ -377,7 +383,9 @@ describe('ElectronVersions', () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
       const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
       await fs.promises.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(1061);
     });
@@ -393,10 +401,10 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(2);
     });
 
@@ -419,10 +427,10 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(1);
     });
 
@@ -453,10 +461,10 @@ describe('ElectronVersions', () => {
           'Content-Type': 'application/json',
         },
       );
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { ignoreCache: true },
-      );
+      const { versions } = await ElectronVersions.create({
+        ignoreCache: true,
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(3);
     });
@@ -480,17 +488,20 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions, ignoreCache: true },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        ignoreCache: true,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(2);
     });
   });
 
   describe('.fetch', () => {
     it('updates the cache', async () => {
-      const electronVersions = await ElectronVersions.create({ versionsCache });
+      const electronVersions = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(electronVersions.versions.length).toBe(1061);
 
       const scope = nockScope.get('/releases.json').reply(

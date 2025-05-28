@@ -78,6 +78,9 @@ export interface ElectronVersionsCreateOptions {
 
   /** Ignore the cache even if it exists and is fresh */
   ignoreCache?: boolean;
+
+  /** Paths to use for the cache and fiddles */
+  paths?: Partial<Paths>;
 }
 
 export function compareVersions(a: SemVer, b: SemVer): number {
@@ -313,11 +316,10 @@ export class ElectronVersions extends BaseVersions {
   }
 
   public static async create(
-    paths: Partial<Paths> = {},
     options: ElectronVersionsCreateOptions = {},
   ): Promise<ElectronVersions> {
     const d = debug('fiddle-core:ElectronVersions:create');
-    const { versionsCache } = { ...DefaultPaths, ...paths };
+    const { versionsCache } = { ...DefaultPaths, ...(options?.paths ?? {}) };
 
     // Use initialVersions instead if provided, and don't fetch if so
     let versions = options.initialVersions;
