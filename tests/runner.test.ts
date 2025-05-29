@@ -1,30 +1,33 @@
+import child_process from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import os from 'node:os';
+import path from 'node:path';
+import { Writable } from 'node:stream';
+
+import fs from 'graceful-fs';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
 import {
   Installer,
   FiddleFactory,
+  FiddleFactoryCreateOptions,
   Runner,
   TestResult,
-  FiddleFactoryCreateOptions,
-} from '../src/index';
-import child_process from 'child_process';
-import { EventEmitter } from 'events';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as os from 'os';
-import { Writable } from 'stream';
+} from '../src/index.js';
 
-jest.mock('child_process');
+vi.mock('child_process');
 
-const mockStdout = jest.fn();
+const mockStdout = vi.fn();
 
 const mockSubprocess = {
-  on: jest.fn(),
+  on: vi.fn(),
   stdout: {
-    on: jest.fn(),
-    pipe: jest.fn(),
+    on: vi.fn(),
+    pipe: vi.fn(),
   },
   stderr: {
-    on: jest.fn(),
-    pipe: jest.fn(),
+    on: vi.fn(),
+    pipe: vi.fn(),
   },
 };
 
@@ -40,16 +43,16 @@ let tmpdir: string;
 let versionsCache: string;
 
 beforeAll(async () => {
-  tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+  tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
 
   // Copy the releases.json fixture over to populate the versions cache
   versionsCache = path.join(tmpdir, 'versions.json');
   const filename = path.join(__dirname, 'fixtures', 'releases.json');
-  await fs.outputJSON(versionsCache, await fs.readJson(filename));
+  await fs.promises.copyFile(filename, versionsCache);
 });
 
 afterAll(() => {
-  fs.removeSync(tmpdir);
+  fs.rmSync(tmpdir, { recursive: true, force: true });
 });
 
 async function createFakeRunner({
@@ -61,10 +64,10 @@ async function createFakeRunner({
 }: FakeRunnerOpts) {
   const runner = await Runner.create({
     installer: {
-      install: jest.fn().mockResolvedValue(pathToExecutable),
+      install: vi.fn().mockResolvedValue(pathToExecutable),
     } as Pick<Installer, 'install'> as Installer,
     fiddleFactory: {
-      create: jest
+      create: vi
         .fn()
         .mockImplementation((_, options?: FiddleFactoryCreateOptions) => {
           if (options?.packAsAsar)
@@ -100,12 +103,12 @@ describe('Runner', () => {
   describe('create()', () => {
     it('creates a Runner object with the expected properties', async () => {
       const runner = await Runner.create();
-      expect(Object.keys(runner)).toEqual([
-        'installer',
-        'versions',
+      expect(Object.keys(runner).sort()).toEqual([
         'fiddleFactory',
+        'installer',
         'osInfo',
         'spawnInfo',
+        'versions',
       ]);
     });
   });
@@ -114,7 +117,9 @@ describe('Runner', () => {
     it('spawns a subprocess and prints debug information to stdout', async () => {
       const runner = await createFakeRunner({});
 
-      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+      vi.mocked(child_process.spawn).mockReturnValueOnce(
+        mockSubprocess as unknown as child_process.ChildProcess,
+      );
 
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
         out: {
@@ -146,7 +151,9 @@ describe('Runner', () => {
       'can spawn a subprocess in headless mode on Linux',
       async function () {
         const runner = await createFakeRunner({});
-        (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+        vi.mocked(child_process.spawn).mockReturnValueOnce(
+          mockSubprocess as unknown as child_process.ChildProcess,
+        );
 
         await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
           headless: true,
@@ -174,7 +181,9 @@ describe('Runner', () => {
 
     it('hides the debug output if showConfig is false', async () => {
       const runner = await createFakeRunner({});
-      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+      vi.mocked(child_process.spawn).mockReturnValueOnce(
+        mockSubprocess as unknown as child_process.ChildProcess,
+      );
 
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
         out: {
@@ -190,7 +199,9 @@ describe('Runner', () => {
       const runner = await createFakeRunner({
         generatedFiddle: null,
       });
-      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+      vi.mocked(child_process.spawn).mockReturnValueOnce(
+        mockSubprocess as unknown as child_process.ChildProcess,
+      );
 
       await expect(runner.spawn('12.0.1', 'invalid-fiddle')).rejects.toEqual(
         new Error(`Invalid fiddle: "'invalid-fiddle'"`),
@@ -199,7 +210,9 @@ describe('Runner', () => {
 
     it('spawns a subprocess with ASAR path when runFromAsar is true', async () => {
       const runner = await createFakeRunner({});
-      (child_process.spawn as jest.Mock).mockReturnValueOnce(mockSubprocess);
+      vi.mocked(child_process.spawn).mockReturnValueOnce(
+        mockSubprocess as unknown as child_process.ChildProcess,
+      );
 
       await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
         out: {
@@ -228,7 +241,7 @@ describe('Runner', () => {
       async (status, event, exitCode) => {
         const runner = await Runner.create();
         const fakeSubprocess = new EventEmitter();
-        runner.spawn = jest.fn().mockResolvedValue(fakeSubprocess);
+        runner.spawn = vi.fn().mockResolvedValue(fakeSubprocess);
 
         // delay to ensure that the listeners in run() are set up.
         process.nextTick(() => {
@@ -252,9 +265,9 @@ describe('Runner', () => {
         ['12.0.4', { status: 'test_passed' }],
         ['12.0.5', { status: 'test_failed' }],
       ]);
-      runner.run = jest.fn((version) => {
-        return new Promise((resolve) =>
-          resolve(resultMap.get(version as string) as TestResult),
+      runner.run = vi.fn((version) => {
+        return new Promise<TestResult>((resolve) =>
+          resolve(resultMap.get(version as string)!),
         );
       });
 
@@ -279,9 +292,9 @@ describe('Runner', () => {
         ['12.0.4', { status: 'test_failed' }],
         ['12.0.5', { status: 'test_failed' }],
       ]);
-      runner.run = jest.fn((version) => {
-        return new Promise((resolve) =>
-          resolve(resultMap.get(version as string) as TestResult),
+      runner.run = vi.fn((version) => {
+        return new Promise<TestResult>((resolve) =>
+          resolve(resultMap.get(version as string)!),
         );
       });
 
@@ -302,9 +315,9 @@ describe('Runner', () => {
         ['12.0.0', { status: 'test_passed' }],
         ['12.0.1', { status: 'test_failed' }],
       ]);
-      runner.run = jest.fn((version) => {
-        return new Promise((resolve) =>
-          resolve(resultMap.get(version as string) as TestResult),
+      runner.run = vi.fn((version) => {
+        return new Promise<TestResult>((resolve) =>
+          resolve(resultMap.get(version as string)!),
         );
       });
 
@@ -339,9 +352,9 @@ describe('Runner', () => {
           ['12.0.1', { status }],
           ['12.0.2', { status }],
         ]);
-        runner.run = jest.fn((version) => {
-          return new Promise((resolve) =>
-            resolve(resultMap.get(version as string) as TestResult),
+        runner.run = vi.fn((version) => {
+          return new Promise<TestResult>((resolve) =>
+            resolve(resultMap.get(version as string)!),
           );
         });
 

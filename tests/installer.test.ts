@@ -1,8 +1,10 @@
+import os from 'node:os';
+import path from 'node:path';
+
 import extract from 'extract-zip';
-import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
+import fs from 'graceful-fs';
 import nock, { Scope } from 'nock';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ElectronBinary,
@@ -10,11 +12,13 @@ import {
   Installer,
   Paths,
   InstallState,
-} from '../src/index';
+} from '../src/index.js';
 
-jest.mock('extract-zip');
+vi.mock('extract-zip');
 
-const extractZip = jest.requireActual<typeof extract>('extract-zip');
+const { default: extractZip } = await vi.importActual<{
+  default: typeof import('extract-zip');
+}>('extract-zip');
 
 describe('Installer', () => {
   let tmpdir: string;
@@ -29,12 +33,12 @@ describe('Installer', () => {
   const fixture = (name: string) => path.join(__dirname, 'fixtures', name);
 
   beforeEach(async () => {
-    jest
-      .mocked(extract)
-      .mockImplementation(async (zipPath: string, opts: extract.Options) => {
+    vi.mocked(extract).mockImplementation(
+      async (zipPath: string, opts: extract.Options) => {
         await extractZip(zipPath, opts);
-      });
-    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+      },
+    );
+    tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     paths = {
       electronDownloads: path.join(tmpdir, 'downloads'),
       electronInstall: path.join(tmpdir, 'install'),
@@ -62,7 +66,7 @@ describe('Installer', () => {
   afterEach(() => {
     nock.cleanAll();
     nock.enableNetConnect();
-    fs.removeSync(tmpdir);
+    fs.rmSync(tmpdir, { recursive: true, force: true });
   });
 
   // test helpers
@@ -185,7 +189,7 @@ describe('Installer', () => {
       // setup: version is already installed
       const { binaryConfig: config1 } = await doDownload(installer, version);
       const { path: zip1 } = config1;
-      const { ctimeMs } = await fs.stat(zip1);
+      const { ctimeMs } = await fs.promises.stat(zip1);
 
       // test that ensureDownloaded() did nothing:
       const { events, binaryConfig: config2 } = await doDownload(
@@ -195,7 +199,7 @@ describe('Installer', () => {
       const { path: zip2 } = config2;
 
       expect(zip2).toEqual(zip1);
-      expect((await fs.stat(zip2)).ctimeMs).toEqual(ctimeMs);
+      expect((await fs.promises.stat(zip2)).ctimeMs).toEqual(ctimeMs);
       expect(events).toStrictEqual([]);
       expect(config1).toStrictEqual({
         path: config2.path,
@@ -209,7 +213,7 @@ describe('Installer', () => {
         binaryConfig: { path: zipFile },
       } = await doDownload(installer, version);
       // Purposely remove the downloaded zip file
-      fs.removeSync(zipFile);
+      fs.rmSync(zipFile, { force: true });
 
       const { binaryConfig } = await doDownload(installer, version);
 
@@ -225,7 +229,7 @@ describe('Installer', () => {
         binaryConfig: { path: zipFile },
       } = await doDownload(installer, version);
       // Purposely remove the downloaded zip file
-      fs.removeSync(zipFile);
+      fs.rmSync(zipFile, { force: true });
       expect(installer.state(version)).toBe(downloaded);
 
       // test that the zipfile was downloaded
@@ -284,7 +288,7 @@ describe('Installer', () => {
         binaryConfig: { path: zipFile },
       } = await doDownload(installer, version);
       // Purposely remove the downloaded zip file
-      fs.removeSync(zipFile);
+      fs.rmSync(zipFile, { force: true });
       expect(installer.state(version)).toBe(downloaded);
 
       const { events } = await doRemove(installer, version);
@@ -349,7 +353,7 @@ describe('Installer', () => {
       } = await doDownload(installer, version);
 
       // Purposely remove the downloaded zip file
-      fs.removeSync(zipFile);
+      fs.rmSync(zipFile, { force: true });
       expect(installer.state(version)).toBe(downloaded);
       const { events } = await doInstall(installer, version);
       expect(events).toStrictEqual([
@@ -373,7 +377,7 @@ describe('Installer', () => {
       // setup: version is not installed
       expect(installer.state(version)).toBe(missing);
 
-      const spy = jest
+      const spy = vi
         .spyOn(installer, 'ensureDownloaded')
         .mockRejectedValueOnce(new Error('Download failed'));
       await expect(doInstall(installer, version)).rejects.toThrow(Error);
@@ -394,7 +398,7 @@ describe('Installer', () => {
       await doDownload(installer, version);
       expect(installer.state(version)).toBe(downloaded);
 
-      jest.mocked(extract).mockRejectedValue(new Error('Extract error'));
+      vi.mocked(extract).mockRejectedValue(new Error('Extract error'));
 
       await expect(doInstall(installer, version)).rejects.toThrow(Error);
       expect(installer.state(version)).toBe(downloaded);
@@ -435,7 +439,7 @@ describe('Installer', () => {
         binaryConfig: { path: zipFile },
       } = await doDownload(installer, version);
       // Purposely remove the downloaded zip file
-      fs.removeSync(zipFile);
+      fs.rmSync(zipFile, { force: true });
       await doDownload(installer, version);
 
       expect(installer.state(version)).toBe(downloaded);
