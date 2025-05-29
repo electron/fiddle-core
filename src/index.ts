@@ -68,6 +68,9 @@ export {
   runFromCommandLine,
 };
 
-if ((await fs.promises.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {
+if (
+  (await fs.promises.realpath(process.argv[1])) ===
+  fileURLToPath(import.meta.url)
+) {
   void runFromCommandLine(process.argv.slice(2));
 }
