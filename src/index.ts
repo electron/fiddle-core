@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { DefaultPaths, Paths } from './paths.js';
@@ -67,6 +68,6 @@ export {
   runFromCommandLine,
 };
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if ((await fs.promises.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {
   void runFromCommandLine(process.argv.slice(2));
 }
