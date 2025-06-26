@@ -1,5 +1,5 @@
 import * as fs from 'fs-extra';
-import { parse as semverParse, SemVer } from 'semver';
+import { parse as semverParse, SemVer, gte } from 'semver';
 import debug from 'debug';
 import fetch from 'node-fetch';
 
@@ -157,11 +157,20 @@ export class BaseVersions implements Versions {
     // build the array
     let parsed: Array<SemVer | null> = [];
     if (isArrayOfVersionObjects(val)) {
-      parsed = val.map(({ version }) => semverParse(version));
+      parsed = val
+        .map(({ version }) => semverParse(version))
+        .filter((sem) => sem && gte(sem, '0.30.0')) // Standalone gte
+        .filter((sem) => !sem.version.startsWith('0.2')); // Exclude atom-shell
 
       // build release info
       for (const entry of val) {
-        if (isReleaseInfo(entry)) {
+        const parsedVersion = semverParse(entry.version);
+        if (
+          isReleaseInfo(entry) &&
+          parsedVersion &&
+          gte(parsedVersion, '0.30.0') &&
+          !entry.version.startsWith('0.2')
+        ){
           this.releaseInfo.set(entry.version, {
             version: entry.version,
             date: entry.date,
@@ -177,7 +186,10 @@ export class BaseVersions implements Versions {
         }
       }
     } else if (isArrayOfStrings(val)) {
-      parsed = val.map((version) => semverParse(version));
+      parsed = val
+      .map((version) => semverParse(version))
+      .filter((sem) => sem && gte(sem, '0.30.0')) 
+      .filter((sem) => !sem.version.startsWith('0.2'));
     } else {
       console.warn('Unrecognized versions:', val);
     }
