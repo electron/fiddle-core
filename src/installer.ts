@@ -368,12 +368,17 @@ export class Installer extends EventEmitter {
 
         // An unzipped version already exists at `electronDownload` path
         if (alreadyExtracted) {
-          await this.installVersionImpl(version, source, () => {
+          await this.installVersionImpl(version, source, async () => {
             // Simply copy over the files from preinstalled version to `electronInstall`
             const { noAsar } = process;
             process.noAsar = true;
-            fs.cpSync(source, electronInstall, { recursive: true });
-            process.noAsar = noAsar;
+            try {
+              await fs.promises.cp(source, electronInstall, {
+                recursive: true,
+              });
+            } finally {
+              process.noAsar = noAsar;
+            }
           });
         } else {
           await this.installVersionImpl(version, source, async () => {
