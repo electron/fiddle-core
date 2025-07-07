@@ -30,7 +30,8 @@ describe('Installer', () => {
   const version12 = '12.0.15' as const;
   const version13 = '13.1.7' as const;
   const version = version13;
-  const fixture = (name: string) => path.join(__dirname, 'fixtures', name);
+  const fixture = (name: string) =>
+    path.join(import.meta.dirname, 'fixtures', name);
 
   beforeEach(async () => {
     vi.mocked(extract).mockImplementation(

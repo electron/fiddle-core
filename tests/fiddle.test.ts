@@ -23,7 +23,7 @@ describe('FiddleFactory', () => {
   });
 
   function fiddleFixture(name: string): string {
-    return path.join(__dirname, 'fixtures', 'fiddles', name);
+    return path.join(import.meta.dirname, 'fixtures', 'fiddles', name);
   }
 
   it.todo('uses the fiddle cache path if none is specified');

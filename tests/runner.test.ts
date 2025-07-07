@@ -47,7 +47,7 @@ beforeAll(async () => {
 
   // Copy the releases.json fixture over to populate the versions cache
   versionsCache = path.join(tmpdir, 'versions.json');
-  const filename = path.join(__dirname, 'fixtures', 'releases.json');
+  const filename = path.join(import.meta.dirname, 'fixtures', 'releases.json');
   await fs.promises.copyFile(filename, versionsCache);
 });
 

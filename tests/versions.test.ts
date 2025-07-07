@@ -20,7 +20,11 @@ describe('BaseVersions', () => {
   let testVersions: BaseVersions;
 
   beforeEach(async () => {
-    const filename = path.join(__dirname, 'fixtures', 'releases.json');
+    const filename = path.join(
+      import.meta.dirname,
+      'fixtures',
+      'releases.json',
+    );
     const json = JSON.parse(
       await fs.promises.readFile(filename, 'utf8'),
     ) as unknown;
@@ -265,7 +269,11 @@ describe('ElectronVersions', () => {
   let nockScope: Scope;
   let tmpdir: string;
   let versionsCache: string;
-  const releasesFixturePath = path.join(__dirname, 'fixtures', 'releases.json');
+  const releasesFixturePath = path.join(
+    import.meta.dirname,
+    'fixtures',
+    'releases.json',
+  );
 
   beforeAll(async () => {
     tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
