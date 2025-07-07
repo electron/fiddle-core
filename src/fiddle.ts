@@ -22,7 +22,7 @@ export class Fiddle {
   ) {}
 
   public remove(): Promise<void> {
-    return util.promisify(fs.rm)(path.dirname(this.mainPath), {
+    return fs.promises.rm(path.dirname(this.mainPath), {
       recursive: true,
       force: true,
     });
