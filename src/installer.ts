@@ -291,14 +291,14 @@ export class Installer extends EventEmitter {
       this.setState(version, InstallState.downloading);
       try {
         const tempFile = await this.download(version, opts);
-        await util.promisify(fs.mkdir)(electronDownloads, { recursive: true });
+        await fs.promises.mkdir(electronDownloads, { recursive: true });
         try {
-          await util.promisify(fs.rename)(tempFile, zipFile);
+          await fs.promises.rename(tempFile, zipFile);
         } catch (err) {
           // cross-device move not permitted, fallback to copy
           if (err instanceof Error && 'code' in err && err.code === 'EXDEV') {
             await util.promisify(fs.copyFile)(tempFile, zipFile);
-            await util.promisify(fs.rm)(tempFile);
+            await fs.promises.rm(tempFile);
           } else {
             throw err;
           }
@@ -415,7 +415,7 @@ export class Installer extends EventEmitter {
       const { noAsar } = process;
       try {
         process.noAsar = true;
-        await util.promisify(fs.rm)(electronInstall, {
+        await fs.promises.rm(electronInstall, {
           recursive: true,
           force: true,
         });

@@ -54,7 +54,7 @@ export class FiddleFactory {
     // make a tmp copy of this fiddle
     const folder = path.join(this.fiddles, hashString(source));
     d({ source, folder });
-    await util.promisify(fs.rm)(folder, { recursive: true, force: true });
+    await fs.promises.rm(folder, { recursive: true, force: true });
 
     // Disable asar in case any deps bundle Electron - ex. @electron/remote
     const { noAsar } = process;
@@ -93,7 +93,7 @@ export class FiddleFactory {
     for (const content of map.values()) md5sum.update(content);
     const hash = md5sum.digest('hex');
     const folder = path.join(this.fiddles, hash);
-    await util.promisify(fs.mkdir)(folder, { recursive: true });
+    await fs.promises.mkdir(folder, { recursive: true });
     d({ folder });
 
     // save content to that temp directory

@@ -303,7 +303,7 @@ export class ElectronVersions extends BaseVersions {
       );
     }
     const json = await response.json();
-    await util.promisify(fs.mkdir)(path.dirname(cacheFile), {
+    await fs.promises.mkdir(path.dirname(cacheFile), {
       recursive: true,
     });
     await util.promisify(fs.writeFile)(cacheFile, JSON.stringify(json), 'utf8');
@@ -328,7 +328,7 @@ export class ElectronVersions extends BaseVersions {
 
     if (!options.ignoreCache) {
       try {
-        const st = await util.promisify(fs.stat)(versionsCache);
+        const st = await fs.promises.stat(versionsCache);
         versions = JSON.parse(
           await util.promisify(fs.readFile)(versionsCache, 'utf8'),
         );
