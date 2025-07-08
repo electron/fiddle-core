@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import util from 'node:util';
 
-import * as asar from '@electron/asar';
+import { createPackage } from '@electron/asar';
 import fs from 'graceful-fs';
 import debug from 'debug';
 import { simpleGit } from 'simple-git';
@@ -143,7 +143,7 @@ export class FiddleFactory {
     const asarOutputDir = path.join(this.fiddles, hashString(sourceDir));
     const asarFilePath = path.join(asarOutputDir, 'app.asar');
 
-    await asar.createPackage(sourceDir, asarFilePath);
+    await createPackage(sourceDir, asarFilePath);
     const packagedFiddle = new Fiddle(asarFilePath, fiddle.source);
 
     await fs.promises.rm(sourceDir, { recursive: true, force: true });
