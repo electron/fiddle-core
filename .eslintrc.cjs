@@ -9,7 +9,7 @@ const config = {
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'plugin:prettier/recommended'
   ],
-  ignorePatterns: ['.eslintrc.js', 'jest.config.js', '/coverage', '/dist'],
+  ignorePatterns: ['.eslintrc.cjs', 'vitest.config.ts', '/coverage', '/dist'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: './tsconfig.eslint.json',
