@@ -1,14 +1,14 @@
-import * as fs from 'fs-extra';
-import * as path from 'path';
+import { EventEmitter } from 'node:events';
+import path from 'node:path';
+import util, { inspect } from 'node:util';
+
+import fs from 'graceful-fs';
 import semver from 'semver';
 import debug from 'debug';
 import extract from 'extract-zip';
-import { EventEmitter } from 'events';
-import { rimrafSync } from 'rimraf';
 import { download as electronDownload } from '@electron/get';
-import { inspect } from 'util';
 
-import { DefaultPaths, Paths } from './paths';
+import { DefaultPaths, Paths } from './paths.js';
 
 function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
@@ -192,7 +192,7 @@ export class Installer extends EventEmitter {
         const { noAsar } = process;
         try {
           process.noAsar = true;
-          fs.removeSync(path);
+          fs.rmSync(path, { recursive: true, force: true });
         } finally {
           process.noAsar = noAsar;
         }
@@ -291,8 +291,18 @@ export class Installer extends EventEmitter {
       this.setState(version, InstallState.downloading);
       try {
         const tempFile = await this.download(version, opts);
-        await fs.ensureDir(electronDownloads);
-        await fs.move(tempFile, zipFile);
+        await fs.promises.mkdir(electronDownloads, { recursive: true });
+        try {
+          await fs.promises.rename(tempFile, zipFile);
+        } catch (err) {
+          // cross-device move not permitted, fallback to copy
+          if (err instanceof Error && 'code' in err && err.code === 'EXDEV') {
+            await util.promisify(fs.copyFile)(tempFile, zipFile);
+            await fs.promises.rm(tempFile);
+          } else {
+            throw err;
+          }
+        }
       } catch (err) {
         this.setState(version, InstallState.missing);
         throw err;
@@ -358,12 +368,17 @@ export class Installer extends EventEmitter {
 
         // An unzipped version already exists at `electronDownload` path
         if (alreadyExtracted) {
-          await this.installVersionImpl(version, source, () => {
+          await this.installVersionImpl(version, source, async () => {
             // Simply copy over the files from preinstalled version to `electronInstall`
             const { noAsar } = process;
             process.noAsar = true;
-            fs.copySync(source, electronInstall);
-            process.noAsar = noAsar;
+            try {
+              await fs.promises.cp(source, electronInstall, {
+                recursive: true,
+              });
+            } finally {
+              process.noAsar = noAsar;
+            }
           });
         } else {
           await this.installVersionImpl(version, source, async () => {
@@ -405,7 +420,10 @@ export class Installer extends EventEmitter {
       const { noAsar } = process;
       try {
         process.noAsar = true;
-        rimrafSync(electronInstall);
+        await fs.promises.rm(electronInstall, {
+          recursive: true,
+          force: true,
+        });
       } finally {
         process.noAsar = noAsar;
       }

@@ -4,11 +4,11 @@
 
 ```ts
 
-import { ChildProcess } from 'child_process';
-import { EventEmitter } from 'events';
+import { ChildProcess } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { SemVer } from 'semver';
-import { SpawnOptions } from 'child_process';
-import { Writable } from 'stream';
+import { SpawnOptions } from 'node:child_process';
+import { Writable } from 'node:stream';
 
 // @public
 export class BaseVersions implements Versions {
@@ -64,7 +64,7 @@ export interface ElectronBinary {
 // @public
 export class ElectronVersions extends BaseVersions {
     // (undocumented)
-    static create(paths?: Partial<Paths>, options?: ElectronVersionsCreateOptions): Promise<ElectronVersions>;
+    static create(options?: ElectronVersionsCreateOptions): Promise<ElectronVersions>;
     // (undocumented)
     fetch(): Promise<void>;
     // (undocumented)
@@ -93,6 +93,7 @@ export class ElectronVersions extends BaseVersions {
 export interface ElectronVersionsCreateOptions {
     ignoreCache?: boolean;
     initialVersions?: unknown;
+    paths?: Partial<Paths>;
 }
 
 // @public (undocumented)

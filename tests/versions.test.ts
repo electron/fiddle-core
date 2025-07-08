@@ -1,17 +1,33 @@
-import * as fs from 'fs-extra';
-import nock, { Scope } from 'nock';
-import * as os from 'os';
-import * as path from 'path';
-import * as semver from 'semver';
+import os from 'node:os';
+import path from 'node:path';
 
-import { BaseVersions, ElectronVersions } from '../src/versions';
+import fs from 'graceful-fs';
+import nock, { Scope } from 'nock';
+import * as semver from 'semver';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
+
+import { BaseVersions, ElectronVersions } from '../src/versions.js';
 
 describe('BaseVersions', () => {
   let testVersions: BaseVersions;
 
   beforeEach(async () => {
-    const filename = path.join(__dirname, 'fixtures', 'releases.json');
-    const json = (await fs.readJson(filename)) as unknown;
+    const filename = path.join(
+      import.meta.dirname,
+      'fixtures',
+      'releases.json',
+    );
+    const json = JSON.parse(
+      await fs.promises.readFile(filename, 'utf8'),
+    ) as unknown;
     testVersions = new BaseVersions(json);
   });
 
@@ -253,16 +269,20 @@ describe('ElectronVersions', () => {
   let nockScope: Scope;
   let tmpdir: string;
   let versionsCache: string;
-  const releasesFixturePath = path.join(__dirname, 'fixtures', 'releases.json');
+  const releasesFixturePath = path.join(
+    import.meta.dirname,
+    'fixtures',
+    'releases.json',
+  );
 
   beforeAll(async () => {
-    tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
+    tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
   });
 
   beforeEach(async () => {
     // Copy the releases.json fixture over to populate the versions cache
     versionsCache = path.join(tmpdir, 'versions.json');
-    await fs.outputJSON(versionsCache, await fs.readJson(releasesFixturePath));
+    await fs.promises.copyFile(releasesFixturePath, versionsCache);
 
     nock.disableNetConnect();
     nockScope = nock('https://releases.electronjs.org');
@@ -274,18 +294,24 @@ describe('ElectronVersions', () => {
   });
 
   afterAll(() => {
-    fs.removeSync(tmpdir);
+    fs.rmSync(tmpdir, { recursive: true, force: true });
   });
 
   describe('.create', () => {
     it('does not fetch with a fresh cache', async () => {
-      await fs.outputJSON(versionsCache, [
-        {
-          version: '0.23.0',
-        },
-      ]);
+      await fs.promises.writeFile(
+        versionsCache,
+        JSON.stringify([
+          {
+            version: '0.23.0',
+          },
+        ]),
+        'utf8',
+      );
       expect(nockScope.isDone()); // No mocks
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(1);
     });
 
@@ -304,18 +330,20 @@ describe('ElectronVersions', () => {
           'Content-Type': 'application/json',
         },
       );
-      await fs.remove(versionsCache);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      await fs.promises.rm(versionsCache, { force: true });
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(2);
     });
 
     it('throws an error with a missing cache and failed fetch', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
-      await fs.remove(versionsCache);
-      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
-        Error,
-      );
+      await fs.promises.rm(versionsCache, { force: true });
+      await expect(
+        ElectronVersions.create({ paths: { versionsCache } }),
+      ).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
@@ -325,10 +353,10 @@ describe('ElectronVersions', () => {
         .reply(500, JSON.stringify({ error: true }), {
           'Content-Type': 'application/json',
         });
-      await fs.remove(versionsCache);
-      await expect(ElectronVersions.create({ versionsCache })).rejects.toThrow(
-        Error,
-      );
+      await fs.promises.rm(versionsCache, { force: true });
+      await expect(
+        ElectronVersions.create({ paths: { versionsCache } }),
+      ).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
@@ -351,8 +379,10 @@ describe('ElectronVersions', () => {
         },
       );
       const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
-      await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      await fs.promises.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(3);
     });
@@ -360,14 +390,16 @@ describe('ElectronVersions', () => {
     it('uses stale cache when fetch fails', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
       const staleCacheMtime = Date.now() / 1000 - 5 * 60 * 60;
-      await fs.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
-      const { versions } = await ElectronVersions.create({ versionsCache });
+      await fs.promises.utimes(versionsCache, staleCacheMtime, staleCacheMtime);
+      const { versions } = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(1061);
     });
 
     it('uses options.initialVersions if missing cache', async () => {
-      await fs.remove(versionsCache);
+      await fs.promises.rm(versionsCache, { force: true });
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
@@ -377,19 +409,23 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(2);
     });
 
     it('does not use options.initialVersions if cache available', async () => {
-      await fs.outputJSON(versionsCache, [
-        {
-          version: '0.23.0',
-        },
-      ]);
+      await fs.promises.writeFile(
+        versionsCache,
+        JSON.stringify([
+          {
+            version: '0.23.0',
+          },
+        ]),
+        'utf8',
+      );
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
@@ -399,19 +435,23 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(1);
     });
 
     it('does not use cache if options.ignoreCache is true', async () => {
-      await fs.outputJSON(versionsCache, [
-        {
-          version: '0.23.0',
-        },
-      ]);
+      await fs.promises.writeFile(
+        versionsCache,
+        JSON.stringify([
+          {
+            version: '0.23.0',
+          },
+        ]),
+        'utf8',
+      );
       const scope = nockScope.get('/releases.json').reply(
         200,
         JSON.stringify([
@@ -429,20 +469,24 @@ describe('ElectronVersions', () => {
           'Content-Type': 'application/json',
         },
       );
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { ignoreCache: true },
-      );
+      const { versions } = await ElectronVersions.create({
+        ignoreCache: true,
+        paths: { versionsCache },
+      });
       expect(scope.isDone());
       expect(versions.length).toBe(3);
     });
 
     it('uses options.initialVersions if cache available but options.ignoreCache is true', async () => {
-      await fs.outputJSON(versionsCache, [
-        {
-          version: '0.23.0',
-        },
-      ]);
+      await fs.promises.writeFile(
+        versionsCache,
+        JSON.stringify([
+          {
+            version: '0.23.0',
+          },
+        ]),
+        'utf8',
+      );
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
@@ -452,17 +496,20 @@ describe('ElectronVersions', () => {
           version: '0.23.1',
         },
       ];
-      const { versions } = await ElectronVersions.create(
-        { versionsCache },
-        { initialVersions, ignoreCache: true },
-      );
+      const { versions } = await ElectronVersions.create({
+        initialVersions,
+        ignoreCache: true,
+        paths: { versionsCache },
+      });
       expect(versions.length).toBe(2);
     });
   });
 
   describe('.fetch', () => {
     it('updates the cache', async () => {
-      const electronVersions = await ElectronVersions.create({ versionsCache });
+      const electronVersions = await ElectronVersions.create({
+        paths: { versionsCache },
+      });
       expect(electronVersions.versions.length).toBe(1061);
 
       const scope = nockScope.get('/releases.json').reply(

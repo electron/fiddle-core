@@ -1,11 +1,13 @@
-import * as fs from 'fs-extra';
+import path from 'node:path';
+import util from 'node:util';
+
+import fs from 'graceful-fs';
 import { parse as semverParse, SemVer } from 'semver';
 import debug from 'debug';
-import fetch from 'node-fetch';
 
 export { SemVer };
 
-import { DefaultPaths, Paths } from './paths';
+import { DefaultPaths, Paths } from './paths.js';
 
 export type SemOrStr = SemVer | string;
 
@@ -76,6 +78,9 @@ export interface ElectronVersionsCreateOptions {
 
   /** Ignore the cache even if it exists and is fresh */
   ignoreCache?: boolean;
+
+  /** Paths to use for the cache and fiddles */
+  paths?: Partial<Paths>;
 }
 
 export function compareVersions(a: SemVer, b: SemVer): number {
@@ -297,8 +302,11 @@ export class ElectronVersions extends BaseVersions {
         `Fetching versions failed with status code: ${response.status}`,
       );
     }
-    const json = (await response.json()) as unknown;
-    await fs.outputJson(cacheFile, json);
+    const json = await response.json();
+    await fs.promises.mkdir(path.dirname(cacheFile), {
+      recursive: true,
+    });
+    await util.promisify(fs.writeFile)(cacheFile, JSON.stringify(json), 'utf8');
     return json;
   }
 
@@ -308,11 +316,10 @@ export class ElectronVersions extends BaseVersions {
   }
 
   public static async create(
-    paths: Partial<Paths> = {},
     options: ElectronVersionsCreateOptions = {},
   ): Promise<ElectronVersions> {
     const d = debug('fiddle-core:ElectronVersions:create');
-    const { versionsCache } = { ...DefaultPaths, ...paths };
+    const { versionsCache } = { ...DefaultPaths, ...(options?.paths ?? {}) };
 
     // Use initialVersions instead if provided, and don't fetch if so
     let versions = options.initialVersions;
@@ -321,8 +328,10 @@ export class ElectronVersions extends BaseVersions {
 
     if (!options.ignoreCache) {
       try {
-        const st = await fs.stat(versionsCache);
-        versions = await fs.readJson(versionsCache);
+        const st = await fs.promises.stat(versionsCache);
+        versions = JSON.parse(
+          await util.promisify(fs.readFile)(versionsCache, 'utf8'),
+        );
         staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
       } catch (err) {
         d('cache file missing or cannot be read', err);

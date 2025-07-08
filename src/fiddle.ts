@@ -1,11 +1,13 @@
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as asar from '@electron/asar';
-import debug from 'debug';
-import simpleGit from 'simple-git';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import util from 'node:util';
 
-import { DefaultPaths } from './paths';
+import { createPackage } from '@electron/asar';
+import fs from 'graceful-fs';
+import debug from 'debug';
+import { simpleGit } from 'simple-git';
+
+import { DefaultPaths } from './paths.js';
 
 function hashString(str: string): string {
   const md5sum = createHash('md5');
@@ -20,7 +22,10 @@ export class Fiddle {
   ) {}
 
   public remove(): Promise<void> {
-    return fs.remove(path.dirname(this.mainPath));
+    return fs.promises.rm(path.dirname(this.mainPath), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 
@@ -49,12 +54,12 @@ export class FiddleFactory {
     // make a tmp copy of this fiddle
     const folder = path.join(this.fiddles, hashString(source));
     d({ source, folder });
-    await fs.remove(folder);
+    await fs.promises.rm(folder, { recursive: true, force: true });
 
     // Disable asar in case any deps bundle Electron - ex. @electron/remote
     const { noAsar } = process;
     process.noAsar = true;
-    await fs.copy(source, folder);
+    await fs.promises.cp(source, folder, { recursive: true });
     process.noAsar = noAsar;
 
     return new Fiddle(path.join(folder, 'main.js'), source);
@@ -88,12 +93,17 @@ export class FiddleFactory {
     for (const content of map.values()) md5sum.update(content);
     const hash = md5sum.digest('hex');
     const folder = path.join(this.fiddles, hash);
+    await fs.promises.mkdir(folder, { recursive: true });
     d({ folder });
 
     // save content to that temp directory
     await Promise.all(
       [...map.entries()].map(([filename, content]) =>
-        fs.outputFile(path.join(folder, filename), content, 'utf8'),
+        util.promisify(fs.writeFile)(
+          path.join(folder, filename),
+          content,
+          'utf8',
+        ),
       ),
     );
 
@@ -133,10 +143,10 @@ export class FiddleFactory {
     const asarOutputDir = path.join(this.fiddles, hashString(sourceDir));
     const asarFilePath = path.join(asarOutputDir, 'app.asar');
 
-    await asar.createPackage(sourceDir, asarFilePath);
+    await createPackage(sourceDir, asarFilePath);
     const packagedFiddle = new Fiddle(asarFilePath, fiddle.source);
 
-    await fs.remove(sourceDir);
+    await fs.promises.rm(sourceDir, { recursive: true, force: true });
     return packagedFiddle;
   }
 }

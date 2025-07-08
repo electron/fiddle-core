@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-import { DefaultPaths, Paths } from './paths';
+import * as fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+import { DefaultPaths, Paths } from './paths.js';
 import {
   ElectronBinary,
   Installer,
@@ -9,20 +12,20 @@ import {
   InstallStateEvent,
   Mirrors,
   ProgressObject,
-} from './installer';
+} from './installer.js';
 import {
   Fiddle,
   FiddleFactory,
   FiddleSource,
   FiddleFactoryCreateOptions,
-} from './fiddle';
+} from './fiddle.js';
 import {
   BisectResult,
   Runner,
   RunnerOptions,
   RunnerSpawnOptions,
   TestResult,
-} from './runner';
+} from './runner.js';
 import {
   BaseVersions,
   ElectronVersions,
@@ -32,8 +35,8 @@ import {
   SemVer,
   Versions,
   compareVersions,
-} from './versions';
-import { runFromCommandLine } from './command-line';
+} from './versions.js';
+import { runFromCommandLine } from './command-line.js';
 
 export {
   BaseVersions,
@@ -65,6 +68,9 @@ export {
   runFromCommandLine,
 };
 
-if (require.main === module) {
+if (
+  (await fs.promises.realpath(process.argv[1])) ===
+  fileURLToPath(import.meta.url)
+) {
   void runFromCommandLine(process.argv.slice(2));
 }
