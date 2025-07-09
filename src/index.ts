@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-import * as fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 import { DefaultPaths, Paths } from './paths.js';
 import {
   ElectronBinary,
@@ -67,10 +64,3 @@ export {
   compareVersions,
   runFromCommandLine,
 };
-
-if (
-  (await fs.promises.realpath(process.argv[1])) ===
-  fileURLToPath(import.meta.url)
-) {
-  void runFromCommandLine(process.argv.slice(2));
-}
