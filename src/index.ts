@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { DefaultPaths, Paths } from './paths.js';
 import {
   ElectronBinary,
