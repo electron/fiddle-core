@@ -3,3 +3,4 @@ dist/tsdoc-metadata.json
 dist/
 node_modules/
 temp/
+.yarn/install-state.gz
