@@ -22,6 +22,6 @@ jobs:
         node-version-file: '.nvmrc'
     - name: Check Docs
       run: |
-        yarn
+        yarn --immutable
         yarn build
         yarn docs:ci
