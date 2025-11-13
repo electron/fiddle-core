@@ -2,22 +2,26 @@ import path from 'node:path';
 
 import envPaths from 'env-paths';
 
+/** 
+ * Defines standard filesystem paths used by fiddle-core.
+ */
 export interface Paths {
-  // folder where electron zipfiles will be cached
+  /** Directory where Electron zip archives are cached. */
   readonly electronDownloads: string;
 
-  // folder where an electron download will be unzipped to be run
+  /** Directory where Electron builds are extracted and executed. */
   readonly electronInstall: string;
 
-  // folder where fiddles will be saved
+  /** Directory where user fiddles are stored. */
   readonly fiddles: string;
 
-  // file where electron releases are cached
+  /** File path used to cache Electron release metadata. */
   readonly versionsCache: string;
 }
 
 const paths = envPaths('fiddle-core', { suffix: '' });
 
+/** Default set of resolved paths for fiddle-core operations. */
 export const DefaultPaths: Paths = {
   electronDownloads: path.join(paths.data, 'electron', 'zips'),
   electronInstall: path.join(paths.data, 'electron', 'current'),

@@ -4,8 +4,12 @@ import debug from 'debug';
 
 import { ElectronVersions } from './versions.js';
 import { Fiddle, FiddleFactory } from './fiddle.js';
-import { Runner } from './runner.js';
+import { Runner } from './runner.js';  
 
+/**
+ * Handles command-line arguments, initializes objects, and executes commands based on input.
+ * Logs debug information and exits if invalid parameters are detected.
+ */
 export async function runFromCommandLine(argv: string[]): Promise<void> {
   const d = debug('fiddle-core:runFromCommandLine');
 
