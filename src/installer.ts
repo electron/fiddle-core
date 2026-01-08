@@ -13,7 +13,7 @@ import { DefaultPaths, Paths } from './paths.js';
 function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
-
+/** Tracks installation progress as a percentage. */
 export type ProgressObject = { percent: number };
 
 /**
@@ -22,30 +22,55 @@ export type ProgressObject = { percent: number };
  * See Installer.on('state-changed') to watch for state changes.
  */
 export enum InstallState {
+  /** No installation detected. */
   missing = 'missing',
+
+  /** Files are being downloaded. */
   downloading = 'downloading',
+
+  /** Download completed successfully. */
   downloaded = 'downloaded',
+
+  /** Installation process is in progress. */
   installing = 'installing',
+
+  /** Installation completed successfully. */
   installed = 'installed',
 }
-
+/** 
+ * Event emitted when an installation state changes for a specific Electron version.
+ */
 export interface InstallStateEvent {
+  /** Version identifier for the installation. */
   version: string;
+  /** Current installation state. */
   state: InstallState;
 }
-
+/** 
+ * URLs for Electron mirrors used during downloads. 
+ */
 export interface Mirrors {
+   /** Base URL for the Electron mirror. */
   electronMirror: string;
+  /** Base URL for the Electron nightly mirror. */
   electronNightlyMirror: string;
 }
-
+/** 
+ * Configuration details for an Electron binary. 
+ */
 export interface ElectronBinary {
+  /** Local path to the Electron binary. */
   path: string;
-  alreadyExtracted: boolean; // to check if it's kept as zipped or not
+  /** Whether the binary has already been extracted. */
+  alreadyExtracted: boolean;
 }
-
+/** 
+ * Parameters used when running an installer. 
+ */
 export interface InstallerParams {
+    /** Callback invoked to report installation progress. */
   progressCallback: (progress: ProgressObject) => void;
+  /** Mirror sources used for downloading. */
   mirror: Mirrors;
 }
 
@@ -70,7 +95,10 @@ export class Installer extends EventEmitter {
     this.paths = Object.freeze({ ...DefaultPaths, ...pathsIn });
     this.rebuildStates();
   }
-
+ /** 
+ * Returns the relative executable path based on the current platform.
+ * @param platform - Optional platform identifier; defaults to the host platform.
+ */
   public static execSubpath(platform: string = process.platform): string {
     switch (platform) {
       case 'darwin':
@@ -81,11 +109,17 @@ export class Installer extends EventEmitter {
         return 'electron';
     }
   }
-
+ /** 
+ * Resolves the full path to the Electron executable within a given folder.
+ * @param folder - Path to the Electron version folder.
+ */
   public static getExecPath(folder: string): string {
     return path.join(folder, Installer.execSubpath());
   }
-
+ /** 
+ * Returns the current installation state for a given Electron version.
+ * @param version - Version identifier to check.
+ */
   public state(version: string): InstallState {
     return this.stateMap.get(version) || InstallState.missing;
   }
@@ -319,9 +353,15 @@ export class Installer extends EventEmitter {
     };
   }
 
-  /** map of version string to currently-running active Promise */
+ /** 
+ * Tracks versions currently being downloaded, mapped to their active Promise.
+ */
   private downloading = new Map<string, Promise<ElectronBinary>>();
-
+ /** 
+ * Ensures that the specified version of Electron is downloaded and ready for installation.
+ * @param version - Electron version to download.
+ * @param opts - Optional parameters such as progress callbacks or mirror configuration.
+ */
   public async ensureDownloaded(
     version: string,
     opts?: Partial<InstallerParams>,
@@ -337,9 +377,15 @@ export class Installer extends EventEmitter {
     return promise;
   }
 
-  /** keep a track of all currently installing versions */
+ /** 
+ * Tracks all versions currently undergoing installation.
+ */
   private installing = new Set<string>();
-
+ /** 
+ * Installs the specified Electron version after download.
+ * @param version - Electron version to install.
+ * @param opts - Optional installer configuration.
+ */
   public async install(
     version: string,
     opts?: Partial<InstallerParams>,
