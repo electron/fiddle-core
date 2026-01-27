@@ -199,13 +199,7 @@ const result = await runner.run('/path/to/electron/build', fiddle);
 
 ### Running with Windows MSIX Identity
 
-On Windows, you can run Electron with a [sparse MSIX package](https://learn.microsoft.com/en-us/windows/msix/overview) identity. This gives Electron a Windows app identity, which is required for certain Windows features like:
-
-- Toast notifications with app icon
-- Taskbar jump lists
-- Share contract
-- Background tasks
-- And other Windows Runtime APIs that require package identity
+On Windows, you can run Electron with a [sparse MSIX package](https://learn.microsoft.com/en-us/windows/msix/overview) identity. This gives Electron a Windows app identity, which is required for certain Windows features.
 
 ```ts
 import { Runner } from '@electron/fiddle-core';
@@ -223,14 +217,10 @@ When `runWithIdentity` is `true`, fiddle-core will:
 2. Register Electron as a sparse MSIX package using `Add-AppxPackage`
 3. Run Electron via its registered execution alias
 
-**Note:** This feature is only available on Windows 10 version 1803 (build 17134) and later. On other platforms, the `runWithIdentity` option is ignored.
-
 **CLI Usage:**
 ```sh
 # Use the :msix suffix with run, test, or start commands
 $ fiddle-core run:msix 30.0.0 /path/to/fiddle
-$ fiddle-core test:msix 30.0.0 642fa8daaebea6044c9079e3f8a46390
-$ fiddle-core start:msix 30.0.0 https://github.com/my/testcase.git
 ```
 
 ### Using Custom Paths
