@@ -5,7 +5,7 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 
 import fs from 'graceful-fs';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   Installer,
@@ -14,8 +14,12 @@ import {
   Runner,
   TestResult,
 } from '../src/index.js';
+import * as windowsIdentity from '../src/windows-identity.js';
 
 vi.mock('child_process');
+vi.mock('../src/windows-identity.js', () => ({
+  registerElectronIdentity: vi.fn().mockResolvedValue(undefined),
+}));
 
 const mockStdout = vi.fn();
 
@@ -53,6 +57,10 @@ beforeAll(async () => {
 
 afterAll(() => {
   fs.rmSync(tmpdir, { recursive: true, force: true });
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
 });
 
 async function createFakeRunner({
@@ -228,6 +236,30 @@ describe('Runner', () => {
         expect.anything(),
       );
     });
+
+    (process.platform === 'win32' ? it : it.skip)(
+      'spawns a subprocess with MSIX execution alias when runWithIdentity is true on Windows',
+      async () => {
+        const runner = await createFakeRunner({});
+        vi.mocked(child_process.spawn).mockReturnValueOnce(
+          mockSubprocess as unknown as child_process.ChildProcess,
+        );
+
+        await runner.spawn('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
+          out: {
+            write: mockStdout,
+          } as Pick<Writable, 'write'> as Writable,
+          runWithIdentity: true,
+        });
+
+        expect(child_process.spawn).toHaveBeenCalledTimes(1);
+        expect(child_process.spawn).toHaveBeenCalledWith(
+          'ElectronFiddleMSIX.exe',
+          ['/path/to/fiddle/'],
+          expect.anything(),
+        );
+      },
+    );
   });
 
   describe('run()', () => {
@@ -250,6 +282,54 @@ describe('Runner', () => {
 
         const result = await runner.run('fake', 'parameters');
         expect(result).toStrictEqual({ status });
+      },
+    );
+
+    (process.platform === 'win32' ? it : it.skip)(
+      'calls registerElectronIdentity when runWithIdentity is true on Windows',
+      async () => {
+        const runner = await createFakeRunner({});
+        const fakeSubprocess = new EventEmitter();
+        runner.spawn = vi.fn().mockResolvedValue(fakeSubprocess);
+
+        // delay to ensure that the listeners in run() are set up.
+        process.nextTick(() => {
+          fakeSubprocess.emit('exit', 0);
+        });
+
+        await runner.run('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
+          runWithIdentity: true,
+        });
+
+        expect(windowsIdentity.registerElectronIdentity).toHaveBeenCalledTimes(
+          1,
+        );
+        expect(windowsIdentity.registerElectronIdentity).toHaveBeenCalledWith(
+          '12.0.1',
+          '/path/to/electron',
+        );
+      },
+    );
+
+    (process.platform !== 'win32' ? it : it.skip)(
+      'does not call registerElectronIdentity when not on Windows',
+      async () => {
+        const runner = await createFakeRunner({});
+        const fakeSubprocess = new EventEmitter();
+        runner.spawn = vi.fn().mockResolvedValue(fakeSubprocess);
+
+        // delay to ensure that the listeners in run() are set up.
+        process.nextTick(() => {
+          fakeSubprocess.emit('exit', 0);
+        });
+
+        await runner.run('12.0.1', '642fa8daaebea6044c9079e3f8a46390', {
+          runWithIdentity: true,
+        });
+
+        expect(
+          windowsIdentity.registerElectronIdentity,
+        ).not.toHaveBeenCalled();
       },
     );
   });
