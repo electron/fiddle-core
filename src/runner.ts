@@ -28,6 +28,7 @@ export interface RunnerOptions {
   showConfig?: boolean;
   // whether to run the fiddle from asar
   runFromAsar?: boolean;
+  // whether to run Electron with Windows MSIX identity (Windows only).
   runWithIdentity?: boolean;
 }
 
