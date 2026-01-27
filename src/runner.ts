@@ -13,6 +13,9 @@ import { Installer } from './installer.js';
 import { ElectronVersions, Versions } from './versions.js';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle.js';
 import { DefaultPaths, Paths } from './paths.js';
+import { registerElectronIdentity } from './windows-identity.js';
+
+const MSIX_EXEC_ALIAS = 'ElectronFiddleMSIX.exe';
 
 export interface RunnerOptions {
   // extra arguments to be appended to the electron invocation
@@ -25,6 +28,7 @@ export interface RunnerOptions {
   showConfig?: boolean;
   // whether to run the fiddle from asar
   runFromAsar?: boolean;
+  runWithIdentity?: boolean;
 }
 
 const DefaultRunnerOpts: RunnerOptions = {
@@ -153,7 +157,7 @@ export class Runner {
 
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
-    let exec = electronExec;
+    let exec =  process.platform === 'win32' && opts.runWithIdentity ? MSIX_EXEC_ALIAS : electronExec;
     let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
@@ -204,6 +208,14 @@ export class Runner {
     fiddle: FiddleSource,
     opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
+
+    if (process.platform === 'win32' && opts.runWithIdentity) {
+      const electron_version = version instanceof SemVer ? version.version : version;
+      const electronExec = await this.getExec(electron_version);
+      const electronDir = path.dirname(electronExec);
+      await registerElectronIdentity(electron_version, electronDir);
+    }
+
     const subprocess = await this.spawn(version, fiddle, opts);
 
     return new Promise((resolve) => {

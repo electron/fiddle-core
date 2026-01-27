@@ -17,6 +17,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
 
   type Cmd = 'bisect' | 'test' | undefined;
   let cmd: Cmd = undefined;
+  let runWithIdentity: boolean = false;
   let fiddle: Fiddle | undefined = undefined;
 
   d('argv', inspect(argv));
@@ -27,7 +28,12 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
     } else if (param === 'test' || param === 'start' || param === 'run') {
       d('it is test');
       cmd = 'test';
-    } else if (versions.isVersion(param)) {
+    } 
+    else if (param === 'test:msix' || param === 'start:msix' || param === 'run:msix') {
+      cmd = 'test';
+      runWithIdentity = true;
+    }
+    else if (versions.isVersion(param)) {
       versionArgs.push(param);
     } else {
       fiddle = await fiddleFactory.create(param);
@@ -56,6 +62,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
   if (cmd === 'test' && versionArgs.length === 1) {
     const result = await runner.run(versionArgs[0], fiddle, {
       out: process.stdout,
+      runWithIdentity: runWithIdentity,
     });
     const vals = ['test_passed', 'test_failed', 'test_error', 'system_error'];
     process.exitCode = vals.indexOf(result.status);
