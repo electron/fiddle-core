@@ -90,6 +90,27 @@ const result = await runner.run('30.0.0', fiddle, { runWithIdentity: true });
 // see also `Runner.spawn()` in Advanced Use
 ```
 
+### Running with Windows MSIX Identity
+
+On Windows, you can run Electron with a [sparse MSIX package](https://learn.microsoft.com/en-us/windows/msix/overview) identity. This gives Electron a Windows app identity, which is required for certain Windows features.
+
+```ts
+import { Runner } from '@electron/fiddle-core';
+
+const runner = await Runner.create();
+
+// Run fiddle with Windows MSIX identity
+const result = await runner.run('30.0.0', fiddle, {
+  runWithIdentity: true,
+});
+```
+
+When `runWithIdentity` is `true`, fiddle-core will:
+1. Generate an AppxManifest.xml in the Electron installation directory
+2. Register Electron as a sparse MSIX package using `Add-AppxPackage`
+3. Run Electron via its registered execution alias
+
+
 ### Managing Electron Installations
 
 ```ts
@@ -195,32 +216,6 @@ import { Runner } from '@electron/fiddle-core';
 
 const runner = await Runner.create();
 const result = await runner.run('/path/to/electron/build', fiddle);
-```
-
-### Running with Windows MSIX Identity
-
-On Windows, you can run Electron with a [sparse MSIX package](https://learn.microsoft.com/en-us/windows/msix/overview) identity. This gives Electron a Windows app identity, which is required for certain Windows features.
-
-```ts
-import { Runner } from '@electron/fiddle-core';
-
-const runner = await Runner.create();
-
-// Run fiddle with Windows MSIX identity
-const result = await runner.run('30.0.0', fiddle, {
-  runWithIdentity: true,
-});
-```
-
-When `runWithIdentity` is `true`, fiddle-core will:
-1. Generate an AppxManifest.xml in the Electron installation directory
-2. Register Electron as a sparse MSIX package using `Add-AppxPackage`
-3. Run Electron via its registered execution alias
-
-**CLI Usage:**
-```sh
-# Use the :msix suffix with run, test, or start commands
-$ fiddle-core run:msix 30.0.0 /path/to/fiddle
 ```
 
 ### Using Custom Paths
