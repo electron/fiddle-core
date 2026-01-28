@@ -158,7 +158,10 @@ export class Runner {
 
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
-    let exec =  process.platform === 'win32' && opts.runWithIdentity ? MSIX_EXEC_ALIAS : electronExec;
+    let exec =
+      process.platform === 'win32' && opts.runWithIdentity
+        ? MSIX_EXEC_ALIAS
+        : electronExec;
     let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
@@ -209,9 +212,9 @@ export class Runner {
     fiddle: FiddleSource,
     opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
-
     if (process.platform === 'win32' && opts.runWithIdentity) {
-      const electron_version = version instanceof SemVer ? version.version : version;
+      const electron_version =
+        version instanceof SemVer ? version.version : version;
       const electronExec = await this.getExec(electron_version);
       const electronDir = path.dirname(electronExec);
       await registerElectronIdentity(electron_version, electronDir);

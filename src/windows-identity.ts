@@ -41,11 +41,11 @@ function executePowerShell(command: string): Promise<string> {
     let stdout = '';
     let stderr = '';
 
-    ps.stdout.on('data', (data: any) => {
+    ps.stdout.on('data', (data: Buffer) => {
       stdout += data.toString();
     });
 
-    ps.stderr.on('data', (data: any) => {
+    ps.stderr.on('data', (data: Buffer) => {
       stderr += data.toString();
     });
 
@@ -57,7 +57,7 @@ function executePowerShell(command: string): Promise<string> {
       }
     });
 
-    ps.on('error', (err: any) => {
+    ps.on('error', (err: Error) => {
       reject(err);
     });
   });
@@ -79,10 +79,10 @@ async function unregisterSparsePackage(): Promise<void> {
 
     for (const pkg of packages) {
       console.log(`Unregistering sparse package: ${pkg}`);
-      executePowerShell(`Remove-AppxPackage -Package "${pkg.trim()}"`);
+      await executePowerShell(`Remove-AppxPackage -Package "${pkg.trim()}"`);
       console.log(`Successfully unregistered: ${pkg}`);
     }
-  } catch (error: any) {
+  } catch {
     console.log('No existing sparse package to unregister');
   }
 }
@@ -114,7 +114,12 @@ export async function registerElectronIdentity(
 
   try {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const sourcePath = path.join(__dirname, '..', 'static', SOURCE_MANIFEST_FILENAME);
+    const sourcePath = path.join(
+      __dirname,
+      '..',
+      'static',
+      SOURCE_MANIFEST_FILENAME,
+    );
     const targetPath = path.join(electronDir, TARGET_MANIFEST_FILENAME);
 
     // Read manifest and replace placeholders
@@ -135,7 +140,8 @@ export async function registerElectronIdentity(
     );
 
     console.log('Sparse package registered successfully');
-  } catch (error: any) {
-    console.error('Failed to register sparse package:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Failed to register sparse package:', message);
   }
 }

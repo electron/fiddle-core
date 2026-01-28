@@ -5,7 +5,15 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 
 import fs from 'graceful-fs';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   Installer,
@@ -327,9 +335,7 @@ describe('Runner', () => {
           runWithIdentity: true,
         });
 
-        expect(
-          windowsIdentity.registerElectronIdentity,
-        ).not.toHaveBeenCalled();
+        expect(windowsIdentity.registerElectronIdentity).not.toHaveBeenCalled();
       },
     );
   });
