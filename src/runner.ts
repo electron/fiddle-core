@@ -213,11 +213,11 @@ export class Runner {
     opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
     if (process.platform === 'win32' && opts.runWithIdentity) {
-      const electron_version =
+      const electronVersion =
         version instanceof SemVer ? version.version : version;
-      const electronExec = await this.getExec(electron_version);
+      const electronExec = await this.getExec(electronVersion);
       const electronDir = path.dirname(electronExec);
-      await registerElectronIdentity(electron_version, electronDir);
+      await registerElectronIdentity(electronVersion, electronDir);
     }
 
     const subprocess = await this.spawn(version, fiddle, opts);
