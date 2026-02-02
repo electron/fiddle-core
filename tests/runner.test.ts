@@ -293,7 +293,7 @@ describe('Runner', () => {
       },
     );
 
-    (process.platform === 'win32' ? it : it.skip)(
+    it.runIf(process.platform === 'win32')(
       'calls registerElectronIdentity when runWithIdentity is true on Windows',
       async () => {
         const runner = await createFakeRunner({});
