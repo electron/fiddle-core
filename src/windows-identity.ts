@@ -75,11 +75,12 @@ async function unregisterSparsePackage(): Promise<void> {
     const packages = result
       .trim()
       .split('\n')
-      .filter((p) => p.trim().length > 0);
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
 
     for (const pkg of packages) {
       console.log(`Unregistering sparse package: ${pkg}`);
-      await executePowerShell(`Remove-AppxPackage -Package "${pkg.trim()}"`);
+      await executePowerShell(`Remove-AppxPackage -Package "${pkg}"`);
       console.log(`Successfully unregistered: ${pkg}`);
     }
   } catch {
