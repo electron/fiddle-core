@@ -245,7 +245,7 @@ describe('Runner', () => {
       );
     });
 
-    (process.platform === 'win32' ? it : it.skip)(
+    it.runIf(process.platform === 'win32')(
       'spawns a subprocess with MSIX execution alias when runWithIdentity is true on Windows',
       async () => {
         const runner = await createFakeRunner({});
