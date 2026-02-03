@@ -14,13 +14,19 @@ function hashString(str: string): string {
   md5sum.update(str);
   return md5sum.digest('hex');
 }
-
+/** 
+ * A Fiddle instance, containing a main entry file and its source content. 
+ */
 export class Fiddle {
   constructor(
-    public readonly mainPath: string, // /path/to/main.js
+     /** Path to the main entry script file (e.g., `/path/to/main.js`). */
+    public readonly mainPath: string, 
+
+     /** Source code for the Fiddle. */
     public readonly source: string,
   ) {}
 
+    /** Deletes the Fiddle from the file system. */
   public remove(): Promise<void> {
     return fs.promises.rm(path.dirname(this.mainPath), {
       recursive: true,
@@ -41,22 +47,31 @@ export interface FiddleFactoryCreateOptions {
   packAsAsar?: boolean;
 }
 
+/**
+ * Factory class for creating Fiddle instances from different sources.
+ */
 export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
 
+ /**
+   * Creates a Fiddle by fetching a GitHub Gist and cloning it into a temporary directory.
+   * @param gistId - The ID of the GitHub Gist to fetch.
+   */
   public async fromGist(gistId: string): Promise<Fiddle> {
     return this.fromRepo(`https://gist.github.com/${gistId}.git`);
   }
 
+   /**
+   * Creates a Fiddle by making a temporary copy from the specified source folder.
+   * @param source - The folder path containing the Fiddle source files.
+   */
   public async fromFolder(source: string): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromFolder');
 
-    // make a tmp copy of this fiddle
     const folder = path.join(this.fiddles, hashString(source));
     d({ source, folder });
     await fs.promises.rm(folder, { recursive: true, force: true });
 
-    // Disable asar in case any deps bundle Electron - ex. @electron/remote
     const { noAsar } = process;
     process.noAsar = true;
     await fs.promises.cp(source, folder, { recursive: true });
@@ -65,12 +80,20 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
 
+ /**
+ * Creates a Fiddle instance by cloning a Git repository into a temporary directory.
+ * Optionally checks out a specific branch and determines the main file path
+ * based on the cloned content.
+ *
+ * @param url - The Git repository URL to clone.
+ * @param checkout - The branch to check out (default is 'master').
+ * @returns A Promise that resolves to a Fiddle instance.
+ */
   public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromRepo');
     const folder = path.join(this.fiddles, hashString(url));
     d({ url, checkout, folder });
 
-    // get the repo
     if (!fs.existsSync(folder)) {
       d(`cloning "${url}" into "${folder}"`);
       const git = simpleGit();
@@ -83,12 +106,18 @@ export class FiddleFactory {
 
     return new Fiddle(path.join(folder, 'main.js'), url);
   }
-
+ /**
+ * Creates a Fiddle instance from an in-memory collection of files.
+ * Each entry consists of a filename and its corresponding file content.
+ * The files are saved to a temporary directory, and the main file path is set accordingly.
+ *
+ * @param src - An iterable of [filename, content] pairs.
+ * @returns A Promise that resolves to a Fiddle instance.
+ */
   public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromEntries');
     const map = new Map<string, string>(src);
 
-    // make a name for the directory that will hold our temp copy of the fiddle
     const md5sum = createHash('md5');
     for (const content of map.values()) md5sum.update(content);
     const hash = md5sum.digest('hex');
@@ -96,7 +125,6 @@ export class FiddleFactory {
     await fs.promises.mkdir(folder, { recursive: true });
     d({ folder });
 
-    // save content to that temp directory
     await Promise.all(
       [...map.entries()].map(([filename, content]) =>
         util.promisify(fs.writeFile)(
@@ -110,6 +138,14 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
   }
 
+  /**
+ * Determines the type of the provided source and delegates to the appropriate
+ * method to create a Fiddle instance.
+ *
+ * @param src - The source used to create the Fiddle. Can be an existing Fiddle instance,
+ *              a local folder path, a Git repository URL, or a collection of file entries.
+ * @returns A Promise that resolves to a Fiddle instance or undefined if the source type is invalid.
+ */
   public async create(
     src: FiddleSource,
     options?: FiddleFactoryCreateOptions,

@@ -14,18 +14,23 @@ import { ElectronVersions, Versions } from './versions.js';
 import { Fiddle, FiddleFactory, FiddleSource } from './fiddle.js';
 import { DefaultPaths, Paths } from './paths.js';
 
+/** 
+ * Configuration options for running an Electron instance.
+ */
 export interface RunnerOptions {
-  // extra arguments to be appended to the electron invocation
+  /** Additional command-line arguments passed to the Electron process. */
   args?: string[];
-  // if true, use xvfb-run on *nix
+
+  /** Runs the Electron process using `xvfb-run` on Unix-like systems (headless mode). */
   headless?: boolean;
-  // where the test's output should be written
+
+  /** Stream or file where the process output should be written. */
   out?: Writable;
-  // whether to show config info (e.g. platform os & arch) in the log
+
+  /** Displays system and environment configuration details in the log output. */
   showConfig?: boolean;
-  // whether to run the fiddle from asar
-  runFromAsar?: boolean;
 }
+
 
 const DefaultRunnerOpts: RunnerOptions = {
   args: <string[]>[],
@@ -34,17 +39,33 @@ const DefaultRunnerOpts: RunnerOptions = {
   showConfig: true,
 } as const;
 
+/** 
+ * Combined options for spawning and configuring a test runner process.
+ */
 export type RunnerSpawnOptions = SpawnOptions & RunnerOptions;
 
+/** 
+ * Represents the outcome of a single test execution.
+ */
 export interface TestResult {
+  /** Final status of the test execution. */
   status: 'test_passed' | 'test_failed' | 'test_error' | 'system_error';
 }
 
+/** 
+ * Represents the outcome of a bisect operation used to isolate regressions.
+ */
 export interface BisectResult {
+  /** Version range where the bisect identified a passing and failing boundary. */
   range?: [string, string];
+
+  /** Overall status of the bisect operation. */
   status: 'bisect_succeeded' | 'test_error' | 'system_error';
 }
 
+/** 
+ * Handles the execution of Electron-related commands and tests.
+ */
 export class Runner {
   private osInfo = '';
 
@@ -55,7 +76,11 @@ export class Runner {
   ) {
     getos((err, result) => (this.osInfo = inspect(result || err)));
   }
-
+ /** 
+ * Initializes a new Runner instance with optional dependencies.  
+ * @param opts - Optional configuration, such as a custom Installer instance.  
+ * @returns A fully initialized Runner ready to execute Electron tasks.  
+ */
   public static async create(
     opts: {
       installer?: Installer;
@@ -135,7 +160,13 @@ export class Runner {
     }
     return { exec, args };
   }
-
+ /** 
+ * Spawns a child process to execute a Fiddle using a specified Electron version.  
+ * @param versionIn - The Electron version to run (string or SemVer).  
+ * @param fiddleIn - The Fiddle source or path to execute.  
+ * @param options - Optional runner configuration such as headless mode or output stream.  
+ * @returns A Promise that resolves once the process completes.  
+ */
   public async spawn(
     versionIn: string | SemVer,
     fiddleIn: FiddleSource,
@@ -184,7 +215,11 @@ export class Runner {
         return '🟢';
     }
   }
-
+ /** 
+ * Formats and displays the result of a test run.  
+ * @param result - The result object containing the test outcome.  
+ * @returns A formatted string representation of the test result.  
+ */
   public static displayResult(result: TestResult): string {
     const text = Runner.displayEmoji(result);
     switch (result.status) {
@@ -198,7 +233,12 @@ export class Runner {
         return text + ' passed';
     }
   }
-
+ /** 
+ * Runs a Fiddle with a given Electron version and returns the test outcome.  
+ * @param version - The Electron version to test.  
+ * @param fiddle - The Fiddle source or configuration to run.  
+ * @returns A Promise that resolves to the test result.  
+ */
   public async run(
     version: string | SemVer,
     fiddle: FiddleSource,
@@ -218,7 +258,13 @@ export class Runner {
       });
     });
   }
-
+ /** 
+ * Performs a bisect between two Electron versions to identify a regression.  
+ * @param version_a - The older Electron version.  
+ * @param version_b - The newer Electron version.  
+ * @param fiddle - The Fiddle to test across versions.  
+ * @returns A Promise that resolves to the bisect result.  
+ */
   public async bisect(
     version_a: string | SemVer,
     version_b: string | SemVer,
