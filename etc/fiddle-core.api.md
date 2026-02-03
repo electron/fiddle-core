@@ -251,6 +251,8 @@ export interface RunnerOptions {
     // (undocumented)
     runFromAsar?: boolean;
     // (undocumented)
+    runWithIdentity?: boolean;
+    // (undocumented)
     showConfig?: boolean;
 }
 
