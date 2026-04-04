@@ -243,6 +243,12 @@ describe('Installer', () => {
       expect(nockScope.isDone());
     });
 
+    it('rejects versions that are not valid semver', async () => {
+      await expect(
+        installer.ensureDownloaded(path.join('..', 'x')),
+      ).rejects.toThrow(/Invalid Electron version/);
+    });
+
     it('resets install state on error', async () => {
       // setup: version is not installed
       expect(installer.state(version)).toBe(missing);
@@ -296,6 +302,15 @@ describe('Installer', () => {
 
       expect(fs.existsSync(extractDir)).toBe(false);
       expect(events).toStrictEqual([{ version, state: missing }]);
+    });
+
+    it('rejects versions that are not valid semver', async () => {
+      const canary = path.join(tmpdir, 'canary');
+      await fs.promises.mkdir(canary);
+      await expect(installer.remove(path.join('..', 'canary'))).rejects.toThrow(
+        /Invalid Electron version/,
+      );
+      expect(fs.existsSync(canary)).toBe(true);
     });
   });
 
