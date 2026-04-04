@@ -14,6 +14,12 @@ function getZipName(version: string): string {
   return `electron-v${version}-${process.platform}-${process.arch}.zip`;
 }
 
+function assertValidVersion(version: string): void {
+  if (!semver.valid(version)) {
+    throw new Error(`Invalid Electron version: "${version}"`);
+  }
+}
+
 export type ProgressObject = { percent: number };
 
 /**
@@ -163,6 +169,7 @@ export class Installer extends EventEmitter {
   public async remove(version: string): Promise<void> {
     const d = debug('fiddle-core:Installer:remove');
     d(version);
+    assertValidVersion(version);
     let isBinaryDeleted = false;
     // utility to re-run removal functions upon failure
     // due to windows filesystem lockfile jank
@@ -270,6 +277,7 @@ export class Installer extends EventEmitter {
     opts?: Partial<InstallerParams>,
   ): Promise<ElectronBinary> {
     const d = debug(`fiddle-core:Installer:${version}:ensureDownloadedImpl`);
+    assertValidVersion(version);
     const { electronDownloads } = this.paths;
     const zipFile = path.join(electronDownloads, getZipName(version));
     const zipFileExists = fs.existsSync(zipFile);

@@ -84,6 +84,17 @@ describe('FiddleFactory', () => {
       }
     });
 
+    it('rejects entries with filenames that escape the fiddle directory', async () => {
+      const files: [string, string][] = [
+        ['main.js', '"use strict";'],
+        [path.join('..', '..', 'escaped.txt'), 'pwned'],
+      ];
+      await expect(fiddleFactory.create(files)).rejects.toThrow(
+        /outside of fiddle/,
+      );
+      expect(fs.existsSync(path.join(tmpdir, 'escaped.txt'))).toBe(false);
+    });
+
     it('reads fiddles from gists', async () => {
       const gistId = '642fa8daaebea6044c9079e3f8a46390';
       const fiddle = await fiddleFactory.create(gistId);

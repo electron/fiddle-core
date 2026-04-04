@@ -92,19 +92,26 @@ export class FiddleFactory {
     const md5sum = createHash('md5');
     for (const content of map.values()) md5sum.update(content);
     const hash = md5sum.digest('hex');
-    const folder = path.join(this.fiddles, hash);
+    const folder = path.resolve(this.fiddles, hash);
     await fs.promises.mkdir(folder, { recursive: true });
     d({ folder });
 
     // save content to that temp directory
     await Promise.all(
-      [...map.entries()].map(([filename, content]) =>
-        util.promisify(fs.writeFile)(
-          path.join(folder, filename),
-          content,
-          'utf8',
-        ),
-      ),
+      [...map.entries()].map(([filename, content]) => {
+        const filePath = path.resolve(folder, filename);
+        const relative = path.relative(folder, filePath);
+        if (
+          !relative ||
+          relative.startsWith('..') ||
+          path.isAbsolute(relative)
+        ) {
+          throw new Error(
+            `Refusing to write file outside of fiddle: "${filename}"`,
+          );
+        }
+        return util.promisify(fs.writeFile)(filePath, content, 'utf8');
+      }),
     );
 
     return new Fiddle(path.join(folder, 'main.js'), 'entries');
