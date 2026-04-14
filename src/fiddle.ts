@@ -101,14 +101,8 @@ export class FiddleFactory {
       [...map.entries()].map(([filename, content]) => {
         const filePath = path.resolve(folder, filename);
         const relative = path.relative(folder, filePath);
-        if (
-          !relative ||
-          relative.startsWith('..') ||
-          path.isAbsolute(relative)
-        ) {
-          throw new Error(
-            `Refusing to write file outside of fiddle: "${filename}"`,
-          );
+        if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+          throw new Error(`Refusing to write file outside of fiddle: "${filename}"`);
         }
         return util.promisify(fs.writeFile)(filePath, content, 'utf8');
       }),
@@ -129,7 +123,7 @@ export class FiddleFactory {
         fiddle = await this.fromFolder(src);
       } else if (/^[0-9A-Fa-f]{32}$/.test(src)) {
         fiddle = await this.fromGist(src);
-      } else if (/^https:/.test(src) || /\.git$/.test(src)) {
+      } else if (src.startsWith('https:') || src.endsWith('.git')) {
         fiddle = await this.fromRepo(src);
       } else {
         return;

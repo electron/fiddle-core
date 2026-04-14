@@ -53,9 +53,7 @@ describe('FiddleFactory', () => {
       for (const file of fiddleFiles) {
         const sourceFile = path.join(sourceDir, file);
         const fiddleFile = path.join(dirname, file);
-        expect(fs.readFileSync(fiddleFile)).toStrictEqual(
-          fs.readFileSync(sourceFile),
-        );
+        expect(fs.readFileSync(fiddleFile)).toStrictEqual(fs.readFileSync(sourceFile));
       }
     });
 
@@ -89,9 +87,7 @@ describe('FiddleFactory', () => {
         ['main.js', '"use strict";'],
         [path.join('..', '..', 'escaped.txt'), 'pwned'],
       ];
-      await expect(fiddleFactory.create(files)).rejects.toThrow(
-        /outside of fiddle/,
-      );
+      await expect(fiddleFactory.create(files)).rejects.toThrow(/outside of fiddle/);
       expect(fs.existsSync(path.join(tmpdir, 'escaped.txt'))).toBe(false);
     });
 
@@ -129,17 +125,12 @@ describe('FiddleFactory', () => {
       // test that the file list is identical
       const dirname: string = fiddle!.mainPath;
       const sourceFiles = fs.readdirSync(sourceDir);
-      const asarFiles = normalizeAsarFiles(
-        asar.listPackage(dirname, { isPack: false }),
-      );
+      const asarFiles = normalizeAsarFiles(asar.listPackage(dirname, { isPack: false }));
       expect(asarFiles).toStrictEqual(sourceFiles);
 
       // test that the files' contents are identical
       for (const file of sourceFiles) {
-        const sourceFileContent = fs.readFileSync(
-          path.join(sourceDir, file),
-          'utf-8',
-        );
+        const sourceFileContent = fs.readFileSync(path.join(sourceDir, file), 'utf-8');
         const asarFileContent = asar.extractFile(dirname, file).toString();
         expect(asarFileContent).toStrictEqual(sourceFileContent);
       }

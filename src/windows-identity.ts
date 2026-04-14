@@ -107,20 +107,13 @@ export async function registerElectronIdentity(
 
   // Check if Electron is actually installed
   if (!fs.existsSync(electronExe)) {
-    console.log(
-      `Electron not found at ${electronDir}, skipping identity registration`,
-    );
+    console.log(`Electron not found at ${electronDir}, skipping identity registration`);
     return;
   }
 
   try {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const sourcePath = path.join(
-      __dirname,
-      '..',
-      'static',
-      SOURCE_MANIFEST_FILENAME,
-    );
+    const sourcePath = path.join(__dirname, '..', 'static', SOURCE_MANIFEST_FILENAME);
     const targetPath = path.join(electronDir, TARGET_MANIFEST_FILENAME);
 
     // Read manifest and replace placeholders

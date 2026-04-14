@@ -69,10 +69,9 @@ export class Runner {
       versions?: Versions;
     } = {},
   ): Promise<Runner> {
-    const paths = Object.freeze({ ...DefaultPaths, ...(opts.paths || {}) });
+    const paths = Object.freeze({ ...DefaultPaths, ...opts.paths });
     const installer = opts.installer || new Installer(paths);
-    const versions =
-      opts.versions || (await ElectronVersions.create({ paths }));
+    const versions = opts.versions || (await ElectronVersions.create({ paths }));
     const factory = opts.fiddleFactory || new FiddleFactory(paths.fiddles);
     return new Runner(installer, versions, factory);
   }
@@ -97,8 +96,7 @@ export class Runner {
       if (fs.existsSync(name)) return name;
     } catch {
       // if it's a version, install it
-      if (this.versions.isVersion(electron))
-        return await this.installer.install(electron);
+      if (this.versions.isVersion(electron)) return await this.installer.install(electron);
     }
     throw new Error(`Unrecognized electron name: "${electron}"`);
   }
@@ -129,10 +127,7 @@ export class Runner {
     ].join('\n');
 
   /** If headless specified on  *nix, try to run with xvfb-run */
-  private static headless(
-    exec: string,
-    args: string[],
-  ): { exec: string; args: string[] } {
+  private static headless(exec: string, args: string[]): { exec: string; args: string[] } {
     if (process.platform !== 'darwin' && process.platform !== 'win32') {
       // try to get a free server number
       args.unshift('--auto-servernum', exec);
@@ -159,9 +154,7 @@ export class Runner {
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
     let exec =
-      process.platform === 'win32' && opts.runWithIdentity
-        ? MSIX_EXEC_ALIAS
-        : electronExec;
+      process.platform === 'win32' && opts.runWithIdentity ? MSIX_EXEC_ALIAS : electronExec;
     let args = [...(opts.args || []), fiddle.mainPath];
     if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
 
@@ -213,8 +206,7 @@ export class Runner {
     opts: RunnerSpawnOptions = DefaultRunnerOpts,
   ): Promise<TestResult> {
     if (process.platform === 'win32' && opts.runWithIdentity) {
-      const electronVersion =
-        version instanceof SemVer ? version.version : version;
+      const electronVersion = version instanceof SemVer ? version.version : version;
       const electronExec = await this.getExec(electronVersion);
       const electronDir = path.dirname(electronExec);
       await registerElectronIdentity(electronVersion, electronDir);
@@ -313,18 +305,12 @@ export class Runner {
     versions.forEach((ver, i) => {
       const n = testOrder.indexOf(i);
       if (n === -1) return;
-      log(
-        displayIndex(i),
-        Runner.displayResult(results[i]),
-        ver,
-        `(test #${n + 1})`,
-      );
+      log(displayIndex(i), Runner.displayResult(results[i]), ver, `(test #${n + 1})`);
     });
 
     log('\n🏁 Done bisecting');
     const success =
-      results[left].status === 'test_passed' &&
-      results[right].status === 'test_failed';
+      results[left].status === 'test_passed' && results[right].status === 'test_failed';
     if (success) {
       const good = versions[left].version;
       const bad = versions[right].version;
@@ -343,10 +329,7 @@ export class Runner {
       };
     } else {
       // FIXME: log some failure
-      if (
-        result?.status === 'test_error' ||
-        result?.status === 'system_error'
-      ) {
+      if (result?.status === 'test_error' || result?.status === 'system_error') {
         return { status: result.status };
       }
 

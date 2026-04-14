@@ -4,15 +4,7 @@ import path from 'node:path';
 import fs from 'graceful-fs';
 import nock, { Scope } from 'nock';
 import * as semver from 'semver';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { BaseVersions, ElectronVersions } from '../src/versions.js';
 
@@ -20,14 +12,8 @@ describe('BaseVersions', () => {
   let testVersions: BaseVersions;
 
   beforeEach(async () => {
-    const filename = path.join(
-      import.meta.dirname,
-      'fixtures',
-      'releases.json',
-    );
-    const json = JSON.parse(
-      await fs.promises.readFile(filename, 'utf8'),
-    ) as unknown;
+    const filename = path.join(import.meta.dirname, 'fixtures', 'releases.json');
+    const json = JSON.parse(await fs.promises.readFile(filename, 'utf8')) as unknown;
     testVersions = new BaseVersions(json);
   });
 
@@ -35,12 +21,8 @@ describe('BaseVersions', () => {
     it('returns the expected versions', () => {
       const { versions } = testVersions;
       expect(versions.length).toBe(1061);
-      expect(versions).toContainEqual(
-        expect.objectContaining({ version: '13.0.1' }),
-      );
-      expect(versions).not.toContainEqual(
-        expect.objectContaining({ version: '13.0.2' }),
-      );
+      expect(versions).toContainEqual(expect.objectContaining({ version: '13.0.1' }));
+      expect(versions).not.toContainEqual(expect.objectContaining({ version: '13.0.2' }));
     });
   });
 
@@ -52,9 +34,7 @@ describe('BaseVersions', () => {
 
     it('returns stable majors in sorted order', () => {
       const { stableMajors } = testVersions;
-      expect(stableMajors).toEqual([
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-      ]);
+      expect(stableMajors).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
     });
 
     it('returns supported majors in sorted order', () => {
@@ -89,10 +69,7 @@ describe('BaseVersions', () => {
       expect(range.shift()!.version).toBe('12.0.0');
       expect(range.pop()!.version).toBe('12.0.15');
 
-      range = testVersions.inRange(
-        semver.parse('12.0.0')!,
-        semver.parse('12.0.15')!,
-      );
+      range = testVersions.inRange(semver.parse('12.0.0')!, semver.parse('12.0.15')!);
       expect(range.length).toBe(16);
       expect(range.shift()!.version).toBe('12.0.0');
       expect(range.pop()!.version).toBe('12.0.15');
@@ -256,9 +233,7 @@ describe('BaseVersions', () => {
 
     it('does not return release info if partial info', () => {
       const version = '16.0.0-nightly.20210726';
-      const partialVersions = new BaseVersions([
-        { version, node: '16.5.0', openssl: '1.1.1' },
-      ]);
+      const partialVersions = new BaseVersions([{ version, node: '16.5.0', openssl: '1.1.1' }]);
       const releaseInfo = partialVersions.getReleaseInfo(version);
       expect(releaseInfo).toBe(undefined);
     });
@@ -269,11 +244,7 @@ describe('ElectronVersions', () => {
   let nockScope: Scope;
   let tmpdir: string;
   let versionsCache: string;
-  const releasesFixturePath = path.join(
-    import.meta.dirname,
-    'fixtures',
-    'releases.json',
-  );
+  const releasesFixturePath = path.join(import.meta.dirname, 'fixtures', 'releases.json');
 
   beforeAll(async () => {
     tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
@@ -341,22 +312,16 @@ describe('ElectronVersions', () => {
     it('throws an error with a missing cache and failed fetch', async () => {
       const scope = nockScope.get('/releases.json').replyWithError('Error');
       await fs.promises.rm(versionsCache, { force: true });
-      await expect(
-        ElectronVersions.create({ paths: { versionsCache } }),
-      ).rejects.toThrow(Error);
+      await expect(ElectronVersions.create({ paths: { versionsCache } })).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
     it('throws an error with a missing cache and a non-200 server response', async () => {
-      const scope = nockScope
-        .get('/releases.json')
-        .reply(500, JSON.stringify({ error: true }), {
-          'Content-Type': 'application/json',
-        });
+      const scope = nockScope.get('/releases.json').reply(500, JSON.stringify({ error: true }), {
+        'Content-Type': 'application/json',
+      });
       await fs.promises.rm(versionsCache, { force: true });
-      await expect(
-        ElectronVersions.create({ paths: { versionsCache } }),
-      ).rejects.toThrow(Error);
+      await expect(ElectronVersions.create({ paths: { versionsCache } })).rejects.toThrow(Error);
       expect(scope.isDone());
     });
 
