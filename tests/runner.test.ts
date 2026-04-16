@@ -5,15 +5,7 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 
 import fs from 'graceful-fs';
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   Installer,
@@ -83,16 +75,14 @@ async function createFakeRunner({
       install: vi.fn().mockResolvedValue(pathToExecutable),
     } as Pick<Installer, 'install'> as Installer,
     fiddleFactory: {
-      create: vi
-        .fn()
-        .mockImplementation((_, options?: FiddleFactoryCreateOptions) => {
-          if (options?.packAsAsar)
-            return Promise.resolve({
-              ...generatedFiddle,
-              mainPath: '/path/to/fiddle/app.asar',
-            });
-          return Promise.resolve(generatedFiddle);
-        }),
+      create: vi.fn().mockImplementation((_, options?: FiddleFactoryCreateOptions) => {
+        if (options?.packAsAsar)
+          return Promise.resolve({
+            ...generatedFiddle,
+            mainPath: '/path/to/fiddle/app.asar',
+          });
+        return Promise.resolve(generatedFiddle);
+      }),
     } as Pick<FiddleFactory, 'create'> as FiddleFactory,
     paths: {
       versionsCache,
@@ -180,11 +170,7 @@ describe('Runner', () => {
         expect(child_process.spawn).toHaveBeenCalledTimes(1);
         expect(child_process.spawn).toHaveBeenCalledWith(
           'xvfb-run',
-          [
-            '--auto-servernum',
-            '/path/to/electron/executable',
-            '/path/to/fiddle/',
-          ],
+          ['--auto-servernum', '/path/to/electron/executable', '/path/to/fiddle/'],
           {
             args: [],
             headless: true,
@@ -276,22 +262,19 @@ describe('Runner', () => {
       ['test_failed', 'exit', 1],
       ['test_error', 'exit', 999],
       ['system_error', 'error', 1],
-    ])(
-      'can handle a test with the `%s` status',
-      async (status, event, exitCode) => {
-        const runner = await Runner.create();
-        const fakeSubprocess = new EventEmitter();
-        runner.spawn = vi.fn().mockResolvedValue(fakeSubprocess);
+    ])('can handle a test with the `%s` status', async (status, event, exitCode) => {
+      const runner = await Runner.create();
+      const fakeSubprocess = new EventEmitter();
+      runner.spawn = vi.fn().mockResolvedValue(fakeSubprocess);
 
-        // delay to ensure that the listeners in run() are set up.
-        process.nextTick(() => {
-          fakeSubprocess.emit(event, exitCode);
-        });
+      // delay to ensure that the listeners in run() are set up.
+      process.nextTick(() => {
+        fakeSubprocess.emit(event, exitCode);
+      });
 
-        const result = await runner.run('fake', 'parameters');
-        expect(result).toStrictEqual({ status });
-      },
-    );
+      const result = await runner.run('fake', 'parameters');
+      expect(result).toStrictEqual({ status });
+    });
 
     it.runIf(process.platform === 'win32')(
       'calls registerElectronIdentity when runWithIdentity is true on Windows',
@@ -309,9 +292,7 @@ describe('Runner', () => {
           runWithIdentity: true,
         });
 
-        expect(windowsIdentity.registerElectronIdentity).toHaveBeenCalledTimes(
-          1,
-        );
+        expect(windowsIdentity.registerElectronIdentity).toHaveBeenCalledTimes(1);
         expect(windowsIdentity.registerElectronIdentity).toHaveBeenCalledWith(
           '12.0.1',
           '/path/to/electron',
@@ -352,16 +333,10 @@ describe('Runner', () => {
         ['12.0.5', { status: 'test_failed' }],
       ]);
       runner.run = vi.fn((version) => {
-        return new Promise<TestResult>((resolve) =>
-          resolve(resultMap.get(version as string)!),
-        );
+        return new Promise<TestResult>((resolve) => resolve(resultMap.get(version as string)!));
       });
 
-      const result = await runner.bisect(
-        '12.0.0',
-        '12.0.5',
-        '642fa8daaebea6044c9079e3f8a46390',
-      );
+      const result = await runner.bisect('12.0.0', '12.0.5', '642fa8daaebea6044c9079e3f8a46390');
       expect(result).toStrictEqual({
         range: ['12.0.4', '12.0.5'],
         status: 'bisect_succeeded',
@@ -379,16 +354,10 @@ describe('Runner', () => {
         ['12.0.5', { status: 'test_failed' }],
       ]);
       runner.run = vi.fn((version) => {
-        return new Promise<TestResult>((resolve) =>
-          resolve(resultMap.get(version as string)!),
-        );
+        return new Promise<TestResult>((resolve) => resolve(resultMap.get(version as string)!));
       });
 
-      const result = await runner.bisect(
-        '12.0.0',
-        '12.0.5',
-        '642fa8daaebea6044c9079e3f8a46390',
-      );
+      const result = await runner.bisect('12.0.0', '12.0.5', '642fa8daaebea6044c9079e3f8a46390');
       expect(result).toStrictEqual({
         range: ['12.0.1', '12.0.2'],
         status: 'bisect_succeeded',
@@ -402,16 +371,10 @@ describe('Runner', () => {
         ['12.0.1', { status: 'test_failed' }],
       ]);
       runner.run = vi.fn((version) => {
-        return new Promise<TestResult>((resolve) =>
-          resolve(resultMap.get(version as string)!),
-        );
+        return new Promise<TestResult>((resolve) => resolve(resultMap.get(version as string)!));
       });
 
-      const result = await runner.bisect(
-        '12.0.0',
-        '12.0.1',
-        '642fa8daaebea6044c9079e3f8a46390',
-      );
+      const result = await runner.bisect('12.0.0', '12.0.1', '642fa8daaebea6044c9079e3f8a46390');
 
       expect(result).toStrictEqual({
         range: ['12.0.0', '12.0.1'],
@@ -424,9 +387,9 @@ describe('Runner', () => {
         generatedFiddle: null,
       });
 
-      await expect(
-        runner.bisect('12.0.0', '12.0.5', 'invalid-fiddle'),
-      ).rejects.toEqual(new Error(`Invalid fiddle: "'invalid-fiddle'"`));
+      await expect(runner.bisect('12.0.0', '12.0.5', 'invalid-fiddle')).rejects.toEqual(
+        new Error(`Invalid fiddle: "'invalid-fiddle'"`),
+      );
     });
 
     it.each([['test_error' as const], ['system_error' as const]])(
@@ -439,16 +402,10 @@ describe('Runner', () => {
           ['12.0.2', { status }],
         ]);
         runner.run = vi.fn((version) => {
-          return new Promise<TestResult>((resolve) =>
-            resolve(resultMap.get(version as string)!),
-          );
+          return new Promise<TestResult>((resolve) => resolve(resultMap.get(version as string)!));
         });
 
-        const result = await runner.bisect(
-          '12.0.0',
-          '12.0.2',
-          '642fa8daaebea6044c9079e3f8a46390',
-        );
+        const result = await runner.bisect('12.0.0', '12.0.2', '642fa8daaebea6044c9079e3f8a46390');
 
         expect(result).toStrictEqual({ status });
       },

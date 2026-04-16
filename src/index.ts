@@ -8,19 +8,8 @@ import {
   Mirrors,
   ProgressObject,
 } from './installer.js';
-import {
-  Fiddle,
-  FiddleFactory,
-  FiddleSource,
-  FiddleFactoryCreateOptions,
-} from './fiddle.js';
-import {
-  BisectResult,
-  Runner,
-  RunnerOptions,
-  RunnerSpawnOptions,
-  TestResult,
-} from './runner.js';
+import { Fiddle, FiddleFactory, FiddleSource, FiddleFactoryCreateOptions } from './fiddle.js';
+import { BisectResult, Runner, RunnerOptions, RunnerSpawnOptions, TestResult } from './runner.js';
 import {
   BaseVersions,
   ElectronVersions,

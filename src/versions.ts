@@ -128,12 +128,9 @@ function isReleaseInfo(val: unknown): val is ReleaseInfo {
   );
 }
 
-function isArrayOfVersionObjects(
-  val: unknown,
-): val is Array<{ version: string }> {
+function isArrayOfVersionObjects(val: unknown): val is Array<{ version: string }> {
   return (
-    Array.isArray(val) &&
-    val.every((item) => hasVersion(item) && typeof item.version === 'string')
+    Array.isArray(val) && val.every((item) => hasVersion(item) && typeof item.version === 'string')
   );
 }
 
@@ -298,9 +295,7 @@ export class ElectronVersions extends BaseVersions {
     d('fetching releases list from', url);
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(
-        `Fetching versions failed with status code: ${response.status}`,
-      );
+      throw new Error(`Fetching versions failed with status code: ${response.status}`);
     }
     const json = await response.json();
     await fs.promises.mkdir(path.dirname(cacheFile), {
@@ -319,7 +314,7 @@ export class ElectronVersions extends BaseVersions {
     options: ElectronVersionsCreateOptions = {},
   ): Promise<ElectronVersions> {
     const d = debug('fiddle-core:ElectronVersions:create');
-    const { versionsCache } = { ...DefaultPaths, ...(options?.paths ?? {}) };
+    const { versionsCache } = { ...DefaultPaths, ...options?.paths };
 
     // Use initialVersions instead if provided, and don't fetch if so
     let versions = options.initialVersions;
@@ -329,9 +324,7 @@ export class ElectronVersions extends BaseVersions {
     if (!options.ignoreCache) {
       try {
         const st = await fs.promises.stat(versionsCache);
-        versions = JSON.parse(
-          await util.promisify(fs.readFile)(versionsCache, 'utf8'),
-        );
+        versions = JSON.parse(await util.promisify(fs.readFile)(versionsCache, 'utf8'));
         staleCache = !ElectronVersions.isCacheFresh(st.mtimeMs, now);
       } catch (err) {
         d('cache file missing or cannot be read', err);

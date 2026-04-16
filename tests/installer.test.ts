@@ -6,13 +6,7 @@ import fs from 'graceful-fs';
 import nock, { Scope } from 'nock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ElectronBinary,
-  InstallStateEvent,
-  Installer,
-  Paths,
-  InstallState,
-} from '../src/index.js';
+import { ElectronBinary, InstallStateEvent, Installer, Paths, InstallState } from '../src/index.js';
 
 vi.mock('extract-zip');
 
@@ -25,20 +19,16 @@ describe('Installer', () => {
   let paths: Pick<Paths, 'electronDownloads' | 'electronInstall'>;
   let nockScope: Scope;
   let installer: Installer;
-  const { missing, downloading, downloaded, installing, installed } =
-    InstallState;
+  const { missing, downloading, downloaded, installing, installed } = InstallState;
   const version12 = '12.0.15' as const;
   const version13 = '13.1.7' as const;
   const version = version13;
-  const fixture = (name: string) =>
-    path.join(import.meta.dirname, 'fixtures', name);
+  const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name);
 
   beforeEach(async () => {
-    vi.mocked(extract).mockImplementation(
-      async (zipPath: string, opts: extract.Options) => {
-        await extractZip(zipPath, opts);
-      },
-    );
+    vi.mocked(extract).mockImplementation(async (zipPath: string, opts: extract.Options) => {
+      await extractZip(zipPath, opts);
+    });
     tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
     paths = {
       electronDownloads: path.join(tmpdir, 'downloads'),
@@ -72,10 +62,7 @@ describe('Installer', () => {
 
   // test helpers
 
-  async function listenWhile(
-    installer: Installer,
-    func: () => Promise<unknown>,
-  ) {
+  async function listenWhile(installer: Installer, func: () => Promise<unknown>) {
     const events: InstallStateEvent[] = [];
     const listener = (ev: InstallStateEvent) => events.push(ev);
     const event = 'state-changed';
@@ -163,13 +150,10 @@ describe('Installer', () => {
       ['Linux', 'linux', 'electron'],
       ['Windows', 'win32', 'electron.exe'],
       ['macOS', 'darwin', 'Electron.app/Contents/MacOS/Electron'],
-    ])(
-      'returns the right path on %s',
-      (_, platform: string, expected: string) => {
-        const subpath = Installer.execSubpath(platform);
-        expect(subpath).toBe(expected);
-      },
-    );
+    ])('returns the right path on %s', (_, platform: string, expected: string) => {
+      const subpath = Installer.execSubpath(platform);
+      expect(subpath).toBe(expected);
+    });
   });
 
   describe('ensureDownloaded()', () => {
@@ -193,10 +177,7 @@ describe('Installer', () => {
       const { ctimeMs } = await fs.promises.stat(zip1);
 
       // test that ensureDownloaded() did nothing:
-      const { events, binaryConfig: config2 } = await doDownload(
-        installer,
-        version,
-      );
+      const { events, binaryConfig: config2 } = await doDownload(installer, version);
       const { path: zip2 } = config2;
 
       expect(zip2).toEqual(zip1);
@@ -244,9 +225,9 @@ describe('Installer', () => {
     });
 
     it('rejects versions that are not valid semver', async () => {
-      await expect(
-        installer.ensureDownloaded(path.join('..', 'x')),
-      ).rejects.toThrow(/Invalid Electron version/);
+      await expect(installer.ensureDownloaded(path.join('..', 'x'))).rejects.toThrow(
+        /Invalid Electron version/,
+      );
     });
 
     it('resets install state on error', async () => {
@@ -381,9 +362,7 @@ describe('Installer', () => {
     it('throws error if already installing', async () => {
       const promise = doInstall(installer, version);
       try {
-        await expect(doInstall(installer, version)).rejects.toThrow(
-          'Currently installing',
-        );
+        await expect(doInstall(installer, version)).rejects.toThrow('Currently installing');
       } finally {
         await promise;
       }

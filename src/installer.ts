@@ -141,11 +141,7 @@ export class Installer extends EventEmitter {
           this.setState(match[1], InstallState.downloaded);
         } else {
           // Case when the download path already has the unzipped electron version
-          const versionFile = path.join(
-            this.paths.electronDownloads,
-            file,
-            'version',
-          );
+          const versionFile = path.join(this.paths.electronDownloads, file, 'version');
 
           if (fs.existsSync(versionFile)) {
             const version = fs.readFileSync(versionFile, 'utf8').trim();
@@ -182,10 +178,7 @@ export class Installer extends EventEmitter {
         func(path);
         return true;
       } catch (error) {
-        console.warn(
-          `Installer: failed to run ${func.name} for ${version}, but failed`,
-          error,
-        );
+        console.warn(`Installer: failed to run ${func.name} for ${version}, but failed`, error);
         if (counter < 4) {
           console.log(`Installer: Trying again to run ${func.name}`);
           await rerunner(path, func, counter + 1);
@@ -206,10 +199,7 @@ export class Installer extends EventEmitter {
       }
     };
     // get the zip path
-    const zipPath = path.join(
-      this.paths.electronDownloads,
-      getZipName(version),
-    );
+    const zipPath = path.join(this.paths.electronDownloads, getZipName(version));
     // Or, maybe the version was already installed and kept in file system
     const preInstalledPath = path.join(this.paths.electronDownloads, version);
 
@@ -218,10 +208,7 @@ export class Installer extends EventEmitter {
 
     // maybe uninstall it
     if (this.installedVersion === version) {
-      isBinaryDeleted = await rerunner(
-        this.paths.electronInstall,
-        binaryCleaner,
-      );
+      isBinaryDeleted = await rerunner(this.paths.electronInstall, binaryCleaner);
     } else {
       // If the current version binary doesn't exists
       isBinaryDeleted = true;
@@ -241,10 +228,7 @@ export class Installer extends EventEmitter {
       if (state === InstallState.installed) return version;
   }
 
-  private async download(
-    version: string,
-    opts?: Partial<InstallerParams>,
-  ): Promise<string> {
+  private async download(version: string, opts?: Partial<InstallerParams>): Promise<string> {
     let pctDone = 0;
     const getProgressCallback = (progress: ProgressObject) => {
       if (opts?.progressCallback) {
@@ -338,9 +322,7 @@ export class Installer extends EventEmitter {
     let promise = promises.get(version);
     if (promise) return promise;
 
-    promise = this.ensureDownloadedImpl(version, opts).finally(() =>
-      promises.delete(version),
-    );
+    promise = this.ensureDownloadedImpl(version, opts).finally(() => promises.delete(version));
     promises.set(version, promise);
     return promise;
   }
@@ -348,10 +330,7 @@ export class Installer extends EventEmitter {
   /** keep a track of all currently installing versions */
   private installing = new Set<string>();
 
-  public async install(
-    version: string,
-    opts?: Partial<InstallerParams>,
-  ): Promise<string> {
+  public async install(version: string, opts?: Partial<InstallerParams>): Promise<string> {
     const d = debug(`fiddle-core:Installer:${version}:install`);
     const { electronInstall } = this.paths;
     const isVersionInstalling = this.installing.has(version);
@@ -369,10 +348,7 @@ export class Installer extends EventEmitter {
       if (installedVersion === version) {
         d(`already installed`);
       } else {
-        const { path: source, alreadyExtracted } = await this.ensureDownloaded(
-          version,
-          opts,
-        );
+        const { path: source, alreadyExtracted } = await this.ensureDownloaded(version, opts);
 
         // An unzipped version already exists at `electronDownload` path
         if (alreadyExtracted) {

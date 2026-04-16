@@ -28,11 +28,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
     } else if (param === 'test' || param === 'start' || param === 'run') {
       d('it is test');
       cmd = 'test';
-    } else if (
-      param === 'test:msix' ||
-      param === 'start:msix' ||
-      param === 'run:msix'
-    ) {
+    } else if (param === 'test:msix' || param === 'start:msix' || param === 'run:msix') {
       cmd = 'test';
       runWithIdentity = true;
     } else if (versions.isVersion(param)) {
@@ -50,9 +46,7 @@ export async function runFromCommandLine(argv: string[]): Promise<void> {
   d(inspect({ cmd, fiddle, versions }));
 
   if (!cmd) {
-    console.error(
-      "Command-line parameters must include one of ['bisect', 'test', 'start']",
-    );
+    console.error("Command-line parameters must include one of ['bisect', 'test', 'start']");
     process.exit(1);
   }
 
