@@ -41,7 +41,7 @@
     "simple-git": "^3.5.0"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.52.8",
+    "@microsoft/api-extractor": "^7.58.2",
     "@tsconfig/node22": "^22.0.0",
     "@types/debug": "^4.1.12",
     "@types/getos": "^3.0.4",
