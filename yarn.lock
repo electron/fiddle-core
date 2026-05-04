@@ -69,7 +69,6 @@ __metadata:
     "@microsoft/api-extractor": "npm:^7.58.2"
     "@tsconfig/node22": "npm:^22.0.0"
     "@types/debug": "npm:^4.1.12"
-    "@types/getos": "npm:^3.0.4"
     "@types/graceful-fs": "npm:^4.1.9"
     "@types/node": "npm:~22.10.7"
     "@types/semver": "npm:^7.5.6"
@@ -77,7 +76,6 @@ __metadata:
     debug: "npm:^4.3.3"
     env-paths: "npm:^3.0.0"
     extract-zip: "npm:^2.0.1"
-    getos: "npm:^3.2.1"
     graceful-fs: "npm:^4.2.11"
     husky: "npm:^9.0.0"
     lint-staged: "npm:^16.0.0"
@@ -833,13 +831,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/getos@npm:^3.0.4":
-  version: 3.0.4
-  resolution: "@types/getos@npm:3.0.4"
-  checksum: 10c0/5eda5b8189d9f27c1f3d46c9528a23aa82b39c2b7b73a291eae7a39da48ab1801a493f77d47987859af99935e9ce8c3da0e9adac43ddfb561bcba578bd785c22
-  languageName: node
-  linkType: hard
-
 "@types/graceful-fs@npm:^4.1.9":
   version: 4.1.9
   resolution: "@types/graceful-fs@npm:4.1.9"
@@ -1091,13 +1082,6 @@ __metadata:
     estree-walker: "npm:^3.0.3"
     js-tokens: "npm:^10.0.0"
   checksum: 10c0/35e57b754ba63287358094d4f7ae8de2de27286fb4e76a1fbf28b2e67e3b670b59c3f511882473d0fd2cdbaa260062e3cd4f216b724c70032e2b09e5cebbd618
-  languageName: node
-  linkType: hard
-
-"async@npm:^3.2.0":
-  version: 3.2.4
-  resolution: "async@npm:3.2.4"
-  checksum: 10c0/b5d02fed64717edf49e35b2b156debd9cf524934ea670108fa5528e7615ed66a5e0bf6c65f832c9483b63aa7f0bffe3e588ebe8d58a539b833798d324516e1c9
   languageName: node
   linkType: hard
 
@@ -1395,15 +1379,6 @@ __metadata:
   dependencies:
     pump: "npm:^3.0.0"
   checksum: 10c0/43797ffd815fbb26685bf188c8cfebecb8af87b3925091dd7b9a9c915993293d78e3c9e1bce125928ff92f2d0796f3889b92b5ec6d58d1041b574682132e0a80
-  languageName: node
-  linkType: hard
-
-"getos@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "getos@npm:3.2.1"
-  dependencies:
-    async: "npm:^3.2.0"
-  checksum: 10c0/21556fca1da4dfc8f1707261b4f9ff19b9e9bfefa76478249d2abddba3cd014bd6c5360634add1590b27e0b27d422e8f997dddaa0234aae1fa4c54f33f82e841
   languageName: node
   linkType: hard
 

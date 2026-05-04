@@ -35,7 +35,6 @@
     "debug": "^4.3.3",
     "env-paths": "^3.0.0",
     "extract-zip": "^2.0.1",
-    "getos": "^3.2.1",
     "graceful-fs": "^4.2.11",
     "semver": "^7.3.5",
     "simple-git": "^3.5.0"
@@ -44,7 +43,6 @@
     "@microsoft/api-extractor": "^7.58.2",
     "@tsconfig/node22": "^22.0.0",
     "@types/debug": "^4.1.12",
-    "@types/getos": "^3.0.4",
     "@types/graceful-fs": "^4.1.9",
     "@types/node": "~22.10.7",
     "@types/semver": "^7.5.6",

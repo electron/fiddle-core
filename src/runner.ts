@@ -6,7 +6,6 @@ import { Writable } from 'node:stream';
 import { inspect } from 'node:util';
 
 import debug from 'debug';
-import getos from 'getos';
 import { SemVer } from 'semver';
 
 import { Installer } from './installer.js';
@@ -51,15 +50,11 @@ export interface BisectResult {
 }
 
 export class Runner {
-  private osInfo = '';
-
   private constructor(
     private readonly installer: Installer,
     private readonly versions: Versions,
     private readonly fiddleFactory: FiddleFactory,
-  ) {
-    getos((err, result) => (this.osInfo = inspect(result || err)));
-  }
+  ) {}
 
   public static async create(
     opts: {
@@ -122,7 +117,6 @@ export class Runner {
       `      - os_platform: ${process.platform}`,
       `      - os_release: ${os.release()}`,
       `      - os_version: ${os.version()}`,
-      `      - getos: ${this.osInfo}`,
       '',
     ].join('\n');
 
