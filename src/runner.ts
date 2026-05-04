@@ -267,7 +267,7 @@ export class Runner {
     let right = RIGHT_POS;
     let result: TestResult | undefined = undefined;
     const testOrder: (number | undefined)[] = [];
-    const results = new Array<TestResult>(versions.length);
+    const results = Array.from<TestResult>({ length: versions.length });
     while (left + 1 < right) {
       const mid = Math.round(left + (right - left) / 2);
       const ver = versions[mid];
