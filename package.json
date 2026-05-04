@@ -21,7 +21,7 @@
     "build": "tsc -b",
     "docs": "api-extractor run --local",
     "docs:ci": "api-extractor run",
-    "lint": "oxfmt --check . && oxlint",
+    "lint": "oxfmt --check . && oxlint --deny-warnings",
     "lint:fix": "oxfmt --write . && oxlint --fix",
     "prepare": "husky",
     "prepack": "yarn build",
