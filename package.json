@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@electron/asar": "^4.0.0",
-    "@electron/get": "^4.0.0",
+    "@electron/get": "^5.0.0",
     "debug": "^4.3.3",
     "env-paths": "^3.0.0",
     "extract-zip": "^2.0.1",
