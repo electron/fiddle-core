@@ -112,7 +112,6 @@ describe('Runner', () => {
       expect(Object.keys(runner).sort()).toEqual([
         'fiddleFactory',
         'installer',
-        'osInfo',
         'spawnInfo',
         'versions',
       ]);
