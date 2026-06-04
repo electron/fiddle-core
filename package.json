@@ -30,11 +30,11 @@
     "test:ci": "vitest run --coverage"
   },
   "dependencies": {
+    "@electron-internal/extract-zip": "^1.0.1",
     "@electron/asar": "^4.0.0",
     "@electron/get": "^5.0.0",
     "debug": "^4.3.3",
     "env-paths": "^3.0.0",
-    "extract-zip": "^2.0.1",
     "graceful-fs": "^4.2.11",
     "semver": "^7.3.5",
     "simple-git": "^3.5.0"

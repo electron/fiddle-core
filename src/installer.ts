@@ -5,7 +5,7 @@ import util, { inspect } from 'node:util';
 import fs from 'graceful-fs';
 import semver from 'semver';
 import debug from 'debug';
-import extract from 'extract-zip';
+import { extract } from '@electron-internal/extract-zip';
 import { download as electronDownload } from '@electron/get';
 
 import { DefaultPaths, Paths } from './paths.js';
