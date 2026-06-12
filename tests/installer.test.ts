@@ -1,18 +1,18 @@
 import os from 'node:os';
 import path from 'node:path';
 
-import extract from 'extract-zip';
+import { extract, type ExtractOptions } from '@electron-internal/extract-zip';
 import fs from 'graceful-fs';
 import nock, { Scope } from 'nock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ElectronBinary, InstallStateEvent, Installer, Paths, InstallState } from '../src/index.js';
 
-vi.mock('extract-zip');
+vi.mock('@electron-internal/extract-zip');
 
-const { default: extractZip } = await vi.importActual<{
-  default: typeof import('extract-zip');
-}>('extract-zip');
+const { extract: extractZip } = await vi.importActual<
+  typeof import('@electron-internal/extract-zip')
+>('@electron-internal/extract-zip');
 
 describe('Installer', () => {
   let tmpdir: string;
@@ -26,7 +26,7 @@ describe('Installer', () => {
   const fixture = (name: string) => path.join(import.meta.dirname, 'fixtures', name);
 
   beforeEach(async () => {
-    vi.mocked(extract).mockImplementation(async (zipPath: string, opts: extract.Options) => {
+    vi.mocked(extract).mockImplementation(async (zipPath: string, opts: ExtractOptions) => {
       await extractZip(zipPath, opts);
     });
     tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'fiddle-core-'));
