@@ -193,7 +193,9 @@ export class BaseVersions implements Versions {
         }
       }
     } else if (isArrayOfStrings(val)) {
-      parsed = val.filter((version) => isSupportedVersion({ version })).map(semverParse);
+      parsed = val
+        .filter((version) => isSupportedVersion({ version }))
+        .map((version) => semverParse(version));
     } else {
       console.warn('Unrecognized versions:', val);
     }
