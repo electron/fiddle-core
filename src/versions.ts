@@ -138,6 +138,20 @@ function isArrayOfStrings(val: unknown): val is Array<string> {
   return Array.isArray(val) && val.every((item) => typeof item === 'string');
 }
 
+/**
+ * Whether an Electron release is recent enough to be supported.
+ *
+ * Mirrors the filtering done by Electron Fiddle: anything in the 0.2x series
+ * is dropped. The oldest version known to releases.electronjs.org is 0.20, and
+ * everything before 0.30.0 (Aug 2015) is unsupported. Pre-0.24.0 releases were
+ * technically 'atom-shell' and cannot be downloaded with @electron/get.
+ *
+ * @see https://github.com/electron/fiddle/blob/35eef39df55eb6ccbe505466cab453d73a8cf18f/src/main/versions.ts#L41-L51
+ */
+function isSupportedVersion({ version }: { version: string }): boolean {
+  return !version.startsWith('0.2');
+}
+
 const NUM_SUPPORTED_MAJORS = 3;
 
 /**
@@ -159,11 +173,11 @@ export class BaseVersions implements Versions {
     // build the array
     let parsed: Array<SemVer | null> = [];
     if (isArrayOfVersionObjects(val)) {
-      parsed = val.map(({ version }) => semverParse(version));
+      parsed = val.filter(isSupportedVersion).map(({ version }) => semverParse(version));
 
       // build release info
       for (const entry of val) {
-        if (isReleaseInfo(entry)) {
+        if (isReleaseInfo(entry) && isSupportedVersion(entry)) {
           this.releaseInfo.set(entry.version, {
             version: entry.version,
             date: entry.date,
@@ -179,7 +193,7 @@ export class BaseVersions implements Versions {
         }
       }
     } else if (isArrayOfStrings(val)) {
-      parsed = val.map((version) => semverParse(version));
+      parsed = val.filter((version) => isSupportedVersion({ version })).map(semverParse);
     } else {
       console.warn('Unrecognized versions:', val);
     }
