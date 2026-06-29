@@ -20,9 +20,52 @@ describe('BaseVersions', () => {
   describe('.versions', () => {
     it('returns the expected versions', () => {
       const { versions } = testVersions;
-      expect(versions.length).toBe(1061);
+      expect(versions.length).toBe(1027);
       expect(versions).toContainEqual(expect.objectContaining({ version: '13.0.1' }));
       expect(versions).not.toContainEqual(expect.objectContaining({ version: '13.0.2' }));
+    });
+
+    it('filters out unsupported 0.2x (atom-shell era) versions', () => {
+      // Mirrors Electron Fiddle: drop everything in the 0.2x series, but keep
+      // 0.30.0 and newer. Accepts both version-object and string input shapes.
+      const objVersions = new BaseVersions([
+        { version: '0.20.0' },
+        { version: '0.24.0' },
+        { version: '0.29.2' },
+        { version: '0.30.0' },
+        { version: '0.37.8' },
+        { version: '13.0.1' },
+      ]);
+      expect(objVersions.versions.map((v) => v.version)).toEqual(['0.30.0', '0.37.8', '13.0.1']);
+
+      const strVersions = new BaseVersions([
+        '0.20.0',
+        '0.24.0',
+        '0.29.2',
+        '0.30.0',
+        '0.37.8',
+        '13.0.1',
+      ]);
+      expect(strVersions.versions.map((v) => v.version)).toEqual(['0.30.0', '0.37.8', '13.0.1']);
+    });
+
+    it('does not return release info for filtered-out versions', () => {
+      const filtered = new BaseVersions([
+        {
+          version: '0.24.0',
+          date: '2015-04-17',
+          node: '0.11.13',
+          v8: '3.28.71.4',
+          uv: '1.4.2',
+          zlib: '1.2.8',
+          openssl: '1.0.1',
+          modules: '14',
+          chrome: '41.0.2272.76',
+          files: ['darwin-x64'],
+        },
+      ]);
+      expect(filtered.versions.length).toBe(0);
+      expect(filtered.getReleaseInfo('0.24.0')).toBe(undefined);
     });
   });
 
@@ -274,7 +317,7 @@ describe('ElectronVersions', () => {
         versionsCache,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
         ]),
         'utf8',
@@ -291,10 +334,10 @@ describe('ElectronVersions', () => {
         200,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
           {
-            version: '0.23.1',
+            version: '0.30.1',
           },
         ]),
         {
@@ -330,13 +373,13 @@ describe('ElectronVersions', () => {
         200,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
           {
-            version: '0.23.1',
+            version: '0.30.1',
           },
           {
-            version: '0.23.2',
+            version: '0.30.2',
           },
         ]),
         {
@@ -360,7 +403,7 @@ describe('ElectronVersions', () => {
         paths: { versionsCache },
       });
       expect(scope.isDone());
-      expect(versions.length).toBe(1061);
+      expect(versions.length).toBe(1027);
     });
 
     it('uses options.initialVersions if missing cache', async () => {
@@ -368,10 +411,10 @@ describe('ElectronVersions', () => {
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
-          version: '0.23.0',
+          version: '0.30.0',
         },
         {
-          version: '0.23.1',
+          version: '0.30.1',
         },
       ];
       const { versions } = await ElectronVersions.create({
@@ -386,7 +429,7 @@ describe('ElectronVersions', () => {
         versionsCache,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
         ]),
         'utf8',
@@ -394,10 +437,10 @@ describe('ElectronVersions', () => {
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
-          version: '0.23.0',
+          version: '0.30.0',
         },
         {
-          version: '0.23.1',
+          version: '0.30.1',
         },
       ];
       const { versions } = await ElectronVersions.create({
@@ -412,7 +455,7 @@ describe('ElectronVersions', () => {
         versionsCache,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
         ]),
         'utf8',
@@ -421,13 +464,13 @@ describe('ElectronVersions', () => {
         200,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
           {
-            version: '0.23.1',
+            version: '0.30.1',
           },
           {
-            version: '0.23.2',
+            version: '0.30.2',
           },
         ]),
         {
@@ -447,7 +490,7 @@ describe('ElectronVersions', () => {
         versionsCache,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
         ]),
         'utf8',
@@ -455,10 +498,10 @@ describe('ElectronVersions', () => {
       expect(nockScope.isDone()); // No mocks
       const initialVersions = [
         {
-          version: '0.23.0',
+          version: '0.30.0',
         },
         {
-          version: '0.23.1',
+          version: '0.30.1',
         },
       ];
       const { versions } = await ElectronVersions.create({
@@ -475,22 +518,22 @@ describe('ElectronVersions', () => {
       const electronVersions = await ElectronVersions.create({
         paths: { versionsCache },
       });
-      expect(electronVersions.versions.length).toBe(1061);
+      expect(electronVersions.versions.length).toBe(1027);
 
       const scope = nockScope.get('/releases.json').reply(
         200,
         JSON.stringify([
           {
-            version: '0.23.0',
+            version: '0.30.0',
           },
           {
-            version: '0.23.1',
+            version: '0.30.1',
           },
           {
-            version: '0.23.2',
+            version: '0.30.2',
           },
           {
-            version: '0.23.3',
+            version: '0.30.3',
           },
         ]),
         {
