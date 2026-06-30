@@ -5,14 +5,38 @@ import util from 'node:util';
 import { createPackage } from '@electron/asar';
 import fs from 'graceful-fs';
 import debug from 'debug';
-import { simpleGit } from 'simple-git';
 
 import { DefaultPaths } from './paths.js';
+import { getOctokit } from './octokit.js';
 
 function hashString(str: string): string {
   const md5sum = createHash('md5');
   md5sum.update(str);
   return md5sum.digest('hex');
+}
+
+/**
+ * Parses an `owner` and `repo` out of a GitHub repository URL. Supports the
+ * common HTTPS and SSH forms, with or without a trailing `.git`. Returns
+ * `undefined` if the URL isn't a recognizable GitHub repository URL.
+ */
+function parseRepoUrl(url: string): { owner: string; repo: string } | undefined {
+  // https://github.com/owner/repo(.git), git@github.com:owner/repo(.git)
+  const match = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(url);
+  if (match === null) return undefined;
+  return { owner: match[1], repo: match[2] };
+}
+
+/**
+ * Parses a gist ID out of a gist URL. Supports forms like
+ * `https://gist.github.com/<id>(.git)` and
+ * `https://gist.github.com/<user>/<id>(.git)`. Returns `undefined` if the URL
+ * isn't a gist URL.
+ */
+function parseGistUrl(url: string): string | undefined {
+  const match = /gist\.github\.com\/(?:[^/]+\/)?([0-9A-Fa-f]+)(?:\.git)?\/?$/.exec(url);
+  if (match === null) return undefined;
+  return match[1];
 }
 
 export class Fiddle {
@@ -45,7 +69,19 @@ export class FiddleFactory {
   constructor(private readonly fiddles: string = DefaultPaths.fiddles) {}
 
   public async fromGist(gistId: string): Promise<Fiddle> {
-    return this.fromRepo(`https://gist.github.com/${gistId}.git`);
+    const d = debug('fiddle-core:FiddleFactory:fromGist');
+    d({ gistId });
+
+    const octokit = getOctokit();
+    const { data: gist } = await octokit.gists.get({ gist_id: gistId });
+
+    const entries: [string, string][] = [];
+    for (const file of Object.values(gist.files ?? {})) {
+      if (file?.filename === undefined || file.content === undefined) continue;
+      entries.push([file.filename, file.content]);
+    }
+
+    return this.fromEntries(entries, `https://gist.github.com/${gistId}.git`);
   }
 
   public async fromFolder(source: string): Promise<Fiddle> {
@@ -65,26 +101,70 @@ export class FiddleFactory {
     return new Fiddle(path.join(folder, 'main.js'), source);
   }
 
-  public async fromRepo(url: string, checkout = 'master'): Promise<Fiddle> {
+  public async fromRepo(url: string, checkout?: string): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromRepo');
-    const folder = path.join(this.fiddles, hashString(url));
-    d({ url, checkout, folder });
 
-    // get the repo
-    if (!fs.existsSync(folder)) {
-      d(`cloning "${url}" into "${folder}"`);
-      const git = simpleGit();
-      await git.clone(url, folder, { '--depth': 1 });
+    // Gist URLs are loaded through the Gists API.
+    const gistId = parseGistUrl(url);
+    if (gistId !== undefined) {
+      d({ url, gistId });
+      return this.fromGist(gistId);
     }
 
-    const git = simpleGit(folder);
-    await git.checkout(checkout);
-    await git.pull('origin', checkout);
+    const parsed = parseRepoUrl(url);
+    if (parsed === undefined) {
+      throw new Error(`Invalid GitHub repository URL: "${url}"`);
+    }
+    const { owner, repo } = parsed;
 
-    return new Fiddle(path.join(folder, 'main.js'), url);
+    const octokit = getOctokit();
+
+    // Resolve the branch/ref to load. When the caller doesn't specify one,
+    // use the repository's actual default branch instead of assuming "master"
+    // or "main".
+    let ref = checkout;
+    if (ref === undefined) {
+      const { data: repoData } = await octokit.repos.get({ owner, repo });
+      ref = repoData.default_branch;
+    }
+    d({ url, owner, repo, ref });
+
+    // Fetch the list of files in the root of the repo at the given ref.
+    const { data: contents } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: '',
+      ref,
+    });
+    if (!Array.isArray(contents)) {
+      throw new Error(`Expected a directory listing at the root of "${url}"`);
+    }
+
+    // Fetch the content of each file in the root of the repo.
+    const entries = await Promise.all(
+      contents
+        .filter((entry) => entry.type === 'file')
+        .map(async (entry): Promise<[string, string]> => {
+          const { data } = await octokit.repos.getContent({
+            owner,
+            repo,
+            path: entry.path,
+            ref,
+          });
+          if (Array.isArray(data) || data.type !== 'file') {
+            throw new Error(`Expected a file at "${entry.path}"`);
+          }
+          const content = Buffer.from(data.content, data.encoding as BufferEncoding).toString(
+            'utf8',
+          );
+          return [entry.name, content];
+        }),
+    );
+
+    return this.fromEntries(entries, url);
   }
 
-  public async fromEntries(src: Iterable<[string, string]>): Promise<Fiddle> {
+  public async fromEntries(src: Iterable<[string, string]>, source = 'entries'): Promise<Fiddle> {
     const d = debug('fiddle-core:FiddleFactory:fromEntries');
     const map = new Map<string, string>(src);
 
@@ -108,7 +188,7 @@ export class FiddleFactory {
       }),
     );
 
-    return new Fiddle(path.join(folder, 'main.js'), 'entries');
+    return new Fiddle(path.join(folder, 'main.js'), source);
   }
 
   public async create(
