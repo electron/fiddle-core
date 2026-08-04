@@ -3,9 +3,12 @@ import path from 'node:path';
 
 import * as asar from '@electron/asar';
 import fs from 'graceful-fs';
+import nock, { Scope } from 'nock';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Fiddle, FiddleFactory } from '../src/index.js';
+
+const GITHUB_API = 'https://api.github.com';
 
 describe('FiddleFactory', () => {
   let tmpdir: string;
@@ -20,7 +23,47 @@ describe('FiddleFactory', () => {
 
   afterEach(async () => {
     await fs.promises.rm(tmpdir, { recursive: true, force: true });
+    nock.cleanAll();
+    nock.enableNetConnect();
+    delete process.env.FIDDLE_CORE_GITHUB_TOKEN;
   });
+
+  // Mock the GitHub REST API responses used by `fromRepo`. The repo is
+  // expected to have a single `main.js` file in its root.
+  function mockRepo(
+    scope: Scope,
+    {
+      owner,
+      repo,
+      ref,
+      defaultBranch,
+      content = '"use strict";',
+    }: {
+      owner: string;
+      repo: string;
+      ref: string;
+      defaultBranch?: string;
+      content?: string;
+    },
+  ): void {
+    if (defaultBranch !== undefined) {
+      scope.get(`/repos/${owner}/${repo}`).reply(200, { default_branch: defaultBranch });
+    }
+    scope
+      .get(`/repos/${owner}/${repo}/contents`)
+      .query({ ref })
+      .reply(200, [{ type: 'file', name: 'main.js', path: 'main.js' }]);
+    scope
+      .get(`/repos/${owner}/${repo}/contents/main.js`)
+      .query({ ref })
+      .reply(200, {
+        type: 'file',
+        name: 'main.js',
+        path: 'main.js',
+        encoding: 'base64',
+        content: Buffer.from(content).toString('base64'),
+      });
+  }
 
   function fiddleFixture(name: string): string {
     return path.join(import.meta.dirname, 'fixtures', 'fiddles', name);
@@ -93,11 +136,22 @@ describe('FiddleFactory', () => {
 
     it('reads fiddles from gists', async () => {
       const gistId = '642fa8daaebea6044c9079e3f8a46390';
+      nock.disableNetConnect();
+      const scope = nock(GITHUB_API)
+        .get(`/gists/${gistId}`)
+        .reply(200, {
+          files: {
+            'main.js': { filename: 'main.js', content: '"use strict";' },
+            'index.html': { filename: 'index.html', content: '<!DOCTYPE html>' },
+          },
+        });
+
       const fiddle = await fiddleFactory.create(gistId);
       expect(fiddle).toBeTruthy();
       expect(fs.existsSync(fiddle!.mainPath)).toBe(true);
       expect(path.basename(fiddle!.mainPath)).toBe('main.js');
       expect(path.dirname(path.dirname(fiddle!.mainPath))).toBe(fiddleDir);
+      expect(scope.isDone()).toBe(true);
     });
 
     it('acts as a pass-through when given a fiddle', async () => {
@@ -136,7 +190,94 @@ describe('FiddleFactory', () => {
       }
     });
 
-    it.todo('reads fiddles from git repositories');
+    it('reads fiddles from git repositories', async () => {
+      nock.disableNetConnect();
+      const scope = nock(GITHUB_API);
+      // No checkout given, so the default branch is resolved via the API.
+      mockRepo(scope, {
+        owner: 'electron',
+        repo: 'electron-quick-start',
+        ref: 'main',
+        defaultBranch: 'main',
+      });
+
+      const repo = 'https://github.com/electron/electron-quick-start.git';
+      const fiddle = await fiddleFactory.create(repo);
+      expect(fiddle).toBeTruthy();
+      expect(fs.existsSync(fiddle!.mainPath)).toBe(true);
+      expect(path.basename(fiddle!.mainPath)).toBe('main.js');
+      expect(path.dirname(path.dirname(fiddle!.mainPath))).toBe(fiddleDir);
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('resolves the default branch when it is "main"', async () => {
+      nock.disableNetConnect();
+      const scope = nock(GITHUB_API);
+      mockRepo(scope, {
+        owner: 'electron',
+        repo: 'main-default',
+        ref: 'main',
+        defaultBranch: 'main',
+      });
+
+      const fiddle = await fiddleFactory.fromRepo('https://github.com/electron/main-default.git');
+      expect(fiddle).toBeTruthy();
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('resolves the default branch when it is "master"', async () => {
+      nock.disableNetConnect();
+      const scope = nock(GITHUB_API);
+      mockRepo(scope, {
+        owner: 'electron',
+        repo: 'master-default',
+        ref: 'master',
+        defaultBranch: 'master',
+      });
+
+      const fiddle = await fiddleFactory.fromRepo('https://github.com/electron/master-default.git');
+      expect(fiddle).toBeTruthy();
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('uses an explicit checkout without resolving the default branch', async () => {
+      nock.disableNetConnect();
+      // Note: no `default_branch` mock, so the test fails if `repos.get` is
+      // called when an explicit checkout is provided.
+      const scope = nock(GITHUB_API);
+      mockRepo(scope, {
+        owner: 'electron',
+        repo: 'some-repo',
+        ref: 'some-branch',
+      });
+
+      const fiddle = await fiddleFactory.fromRepo(
+        'https://github.com/electron/some-repo.git',
+        'some-branch',
+      );
+      expect(fiddle).toBeTruthy();
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('sends the auth token from FIDDLE_CORE_GITHUB_TOKEN', async () => {
+      process.env.FIDDLE_CORE_GITHUB_TOKEN = 'test-token';
+      nock.disableNetConnect();
+      const scope = nock(GITHUB_API, {
+        reqheaders: { authorization: 'token test-token' },
+      });
+      mockRepo(scope, {
+        owner: 'electron',
+        repo: 'auth-repo',
+        ref: 'main',
+        defaultBranch: 'main',
+      });
+
+      const fiddle = await fiddleFactory.fromRepo('https://github.com/electron/auth-repo.git');
+      expect(fiddle).toBeTruthy();
+      // If the authorization header didn't match, nock wouldn't have replied.
+      expect(scope.isDone()).toBe(true);
+    });
+
     it.todo('refreshes the cache if given a previously-cached git repository');
 
     it('returns undefined for unknown input', async () => {
