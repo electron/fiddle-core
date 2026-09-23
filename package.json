@@ -44,9 +44,9 @@
     "@tsconfig/node22": "^22.0.0",
     "@types/debug": "^4.1.12",
     "@types/graceful-fs": "^4.1.9",
-    "@types/node": "~22.10.7",
+    "@types/node": "~22.12.0",
     "@types/semver": "^7.5.6",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^5.0.1",
     "husky": "^9.0.0",
     "lint-staged": "^17.4.1",
     "nock": "^14.0.1",
@@ -54,7 +54,8 @@
     "oxlint": "^1.59.0",
     "oxlint-tsgolint": "^0.20.0",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "vite": "^8.0.16",
+    "vitest": "^5.0.1"
   },
   "engines": {
     "node": ">=22.12.0"
