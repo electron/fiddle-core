@@ -37,7 +37,7 @@
     "env-paths": "^3.0.0",
     "graceful-fs": "^4.2.11",
     "semver": "^7.3.5",
-    "simple-git": "^3.5.0"
+    "simple-git": "^4.0.1"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.58.2",
