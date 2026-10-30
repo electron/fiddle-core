@@ -147,16 +147,21 @@ export class Runner {
 
     // set up the electron binary and the fiddle
     const electronExec = await this.getExec(version);
-    let exec =
-      process.platform === 'win32' && opts.runWithIdentity ? MSIX_EXEC_ALIAS : electronExec;
-    let args = [...(opts.args || []), fiddle.mainPath];
-    if (opts.headless) ({ exec, args } = Runner.headless(exec, args));
+    const electronFolder = path.dirname(electronExec);
+    const electronBin = path.basename(electronExec);
 
+    let exec =
+      process.platform === 'win32' && opts.runWithIdentity ? MSIX_EXEC_ALIAS : electronBin;
+
+    let args = [...(opts.args || []), fiddle.mainPath];
+    if (opts.headless) ({ exec, args } = Runner.headless(electronExec, args));
     if (opts.out && opts.showConfig) {
       opts.out.write(`${this.spawnInfo(version, electronExec, fiddle)}\n`);
     }
 
     d(inspect({ exec, args, opts }));
+
+    opts.cwd = electronFolder;
 
     const child = spawn(exec, args, opts);
     if (opts.out) {
